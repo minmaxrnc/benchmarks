@@ -1,0 +1,522 @@
+sequences_train_(1):
+  class: Sequences
+  args:
+    kind: train
+    size: 20000
+    length:
+      - 256
+      - 512
+    n_ordered_seq: 2
+    n_distinct_seqs: 2
+    multiplicity: 2
+    n_other_tokens: 10
+    p_set: 0.5
+    p_reset: 0.02
+sequences_val_(1):
+  class: Sequences
+  args:
+    kind: val
+    size: 1000
+    length:
+      - 1025
+      - 2048
+    n_ordered_seq: 2
+    n_distinct_seqs: 2
+    multiplicity: 2
+    n_other_tokens: 10
+    p_set: 0.3
+    p_reset: 0.002
+sequences_evaluation_(1):
+  class: Sequences
+  args:
+    kind: evaluation
+    size: 1000
+    length: 1024000
+    n_ordered_seq: 2
+    n_distinct_seqs: 2
+    multiplicity: 2
+    n_other_tokens: 10
+    p_set: 1.0e-05
+    p_reset: 1.0e-06
+sequences_train_(2):
+  class: Sequences
+  args:
+    kind: train
+    size: 20000
+    length:
+      - 256
+      - 512
+    n_ordered_seq: 3
+    n_distinct_seqs: 2
+    multiplicity: 2
+    n_other_tokens: 10
+    p_set: 0.5
+    p_reset: 0.02
+sequences_val_(2):
+  class: Sequences
+  args:
+    kind: val
+    size: 1000
+    length:
+      - 1025
+      - 2048
+    n_ordered_seq: 3
+    n_distinct_seqs: 2
+    multiplicity: 2
+    n_other_tokens: 10
+    p_set: 0.3
+    p_reset: 0.002
+sequences_evaluation_(2):
+  class: Sequences
+  args:
+    kind: evaluation
+    size: 1000
+    length: 1024000
+    n_ordered_seq: 3
+    n_distinct_seqs: 2
+    multiplicity: 2
+    n_other_tokens: 10
+    p_set: 1.0e-05
+    p_reset: 1.0e-06
+sequences_train_(3):
+  class: Sequences
+  args:
+    kind: train
+    size: 20000
+    length:
+      - 256
+      - 512
+    n_ordered_seq: 4
+    n_distinct_seqs: 2
+    multiplicity: 2
+    n_other_tokens: 10
+    p_set: 0.5
+    p_reset: 0.02
+sequences_val_(3):
+  class: Sequences
+  args:
+    kind: val
+    size: 1000
+    length:
+      - 1025
+      - 2048
+    n_ordered_seq: 4
+    n_distinct_seqs: 2
+    multiplicity: 2
+    n_other_tokens: 10
+    p_set: 0.3
+    p_reset: 0.002
+sequences_evaluation_(3):
+  class: Sequences
+  args:
+    kind: evaluation
+    size: 1000
+    length: 1024000
+    n_ordered_seq: 4
+    n_distinct_seqs: 2
+    multiplicity: 2
+    n_other_tokens: 10
+    p_set: 1.0e-05
+    p_reset: 1.0e-06
+sequences_train_(4):
+  class: Sequences
+  args:
+    kind: train
+    size: 20000
+    length:
+      - 256
+      - 512
+    n_ordered_seq: 8
+    n_distinct_seqs: 2
+    multiplicity: 2
+    n_other_tokens: 10
+    p_set: 0.5
+    p_reset: 0.02
+sequences_val_(4):
+  class: Sequences
+  args:
+    kind: val
+    size: 1000
+    length:
+      - 1025
+      - 2048
+    n_ordered_seq: 8
+    n_distinct_seqs: 2
+    multiplicity: 2
+    n_other_tokens: 10
+    p_set: 0.3
+    p_reset: 0.002
+sequences_evaluation_(4):
+  class: Sequences
+  args:
+    kind: evaluation
+    size: 1000
+    length: 1024000
+    n_ordered_seq: 8
+    n_distinct_seqs: 2
+    multiplicity: 2
+    n_other_tokens: 10
+    p_set: 1.0e-05
+    p_reset: 1.0e-06
+sequences_train_(5):
+  class: Sequences
+  args:
+    kind: train
+    size: 20000
+    length:
+      - 256
+      - 512
+    n_ordered_seq: 16
+    n_distinct_seqs: 2
+    multiplicity: 2
+    n_other_tokens: 10
+    p_set: 0.5
+    p_reset: 0.02
+sequences_val_(5):
+  class: Sequences
+  args:
+    kind: val
+    size: 1000
+    length:
+      - 1025
+      - 2048
+    n_ordered_seq: 16
+    n_distinct_seqs: 2
+    multiplicity: 2
+    n_other_tokens: 10
+    p_set: 0.3
+    p_reset: 0.002
+sequences_evaluation_(5):
+  class: Sequences
+  args:
+    kind: evaluation
+    size: 1000
+    length: 1024000
+    n_ordered_seq: 16
+    n_distinct_seqs: 2
+    multiplicity: 2
+    n_other_tokens: 10
+    p_set: 1.0e-05
+    p_reset: 1.0e-06
+latching_train_(1):
+  class: Latching
+  args:
+    kind: train
+    size: 20000
+    length:
+      - 256
+      - 512
+    n_mem: 4
+    vocab_size: 20
+    disjoint: false
+latching_val_(1):
+  class: Latching
+  args:
+    kind: val
+    size: 1000
+    length:
+      - 1024
+      - 2048
+    n_mem: 4
+    vocab_size: 20
+    disjoint: false
+latching_evaluation_(1):
+  class: Latching
+  args:
+    kind: evaluation
+    size: 1000
+    length: 1024000
+    n_mem: 4
+    vocab_size: 20
+    disjoint: false
+latching_train_(2):
+  class: Latching
+  args:
+    kind: train
+    size: 20000
+    length:
+      - 256
+      - 512
+    n_mem: 8
+    vocab_size: 40
+    disjoint: false
+latching_val_(2):
+  class: Latching
+  args:
+    kind: val
+    size: 1000
+    length:
+      - 1024
+      - 2048
+    n_mem: 8
+    vocab_size: 40
+    disjoint: false
+latching_evaluation_(2):
+  class: Latching
+  args:
+    kind: evaluation
+    size: 1000
+    length: 1024000
+    n_mem: 8
+    vocab_size: 40
+    disjoint: false
+latching_train_(3):
+  class: Latching
+  args:
+    kind: train
+    size: 20000
+    length:
+      - 256
+      - 512
+    n_mem: 16
+    vocab_size: 80
+    disjoint: false
+latching_val_(3):
+  class: Latching
+  args:
+    kind: val
+    size: 1000
+    length:
+      - 1024
+      - 2048
+    n_mem: 16
+    vocab_size: 80
+    disjoint: false
+latching_evaluation_(3):
+  class: Latching
+  args:
+    kind: evaluation
+    size: 1000
+    length: 1024000
+    n_mem: 16
+    vocab_size: 80
+    disjoint: false
+latching_train_(4):
+  class: Latching
+  args:
+    kind: train
+    size: 20000
+    length:
+      - 256
+      - 512
+    n_mem: 32
+    vocab_size: 160
+    disjoint: false
+latching_val_(4):
+  class: Latching
+  args:
+    kind: val
+    size: 1000
+    length:
+      - 1024
+      - 2048
+    n_mem: 32
+    vocab_size: 160
+    disjoint: false
+latching_evaluation_(4):
+  class: Latching
+  args:
+    kind: evaluation
+    size: 1000
+    length: 1024000
+    n_mem: 32
+    vocab_size: 160
+    disjoint: false
+latching_train_(5):
+  class: Latching
+  args:
+    kind: train
+    size: 20000
+    length:
+      - 256
+      - 512
+    n_mem: 64
+    vocab_size: 320
+    disjoint: false
+latching_val_(5):
+  class: Latching
+  args:
+    kind: val
+    size: 1000
+    length:
+      - 1024
+      - 2048
+    n_mem: 64
+    vocab_size: 320
+    disjoint: false
+latching_evaluation_(5):
+  class: Latching
+  args:
+    kind: evaluation
+    size: 1000
+    length: 1024000
+    n_mem: 64
+    vocab_size: 320
+    disjoint: false
+latching_train_(6):
+  class: Latching
+  args:
+    kind: train
+    size: 20000
+    length:
+      - 256
+      - 512
+    n_mem: 128
+    vocab_size: 640
+    disjoint: false
+latching_val_(6):
+  class: Latching
+  args:
+    kind: val
+    size: 1000
+    length:
+      - 1024
+      - 2048
+    n_mem: 128
+    vocab_size: 640
+    disjoint: false
+latching_evaluation_(6):
+  class: Latching
+  args:
+    kind: evaluation
+    size: 1000
+    length: 1024000
+    n_mem: 128
+    vocab_size: 640
+    disjoint: false
+latching_train_(7):
+  class: Latching
+  args:
+    kind: train
+    size: 20000
+    length:
+      - 256
+      - 512
+    n_mem: 256
+    vocab_size: 1280
+    disjoint: false
+latching_val_(7):
+  class: Latching
+  args:
+    kind: val
+    size: 1000
+    length:
+      - 1024
+      - 2048
+    n_mem: 256
+    vocab_size: 1280
+    disjoint: false
+latching_evaluation_(7):
+  class: Latching
+  args:
+    kind: evaluation
+    size: 1000
+    length: 1024000
+    n_mem: 256
+    vocab_size: 1280
+    disjoint: false
+latching_train_(8):
+  class: Latching
+  args:
+    kind: train
+    size: 20000
+    length:
+      - 256
+      - 512
+    n_mem: 512
+    vocab_size: 2560
+    disjoint: false
+latching_val_(8):
+  class: Latching
+  args:
+    kind: val
+    size: 1000
+    length:
+      - 1024
+      - 2048
+    n_mem: 512
+    vocab_size: 2560
+    disjoint: false
+latching_evaluation_(8):
+  class: Latching
+  args:
+    kind: evaluation
+    size: 1000
+    length: 1024000
+    n_mem: 512
+    vocab_size: 2560
+    disjoint: false
+inductionheads_train_(0):
+  class: InductionHeads
+  args:
+    kind: train
+    size: 20000
+    length:
+      - 35
+      - 512
+    n_tokens: 16
+    t_mem:
+      - 0
+      - 30
+    masked: true
+inductionheads_val_(0):
+  class: InductionHeads
+  args:
+    kind: val
+    size: 1000
+    length:
+      - 1024
+      - 2048
+    n_tokens: 16
+    t_mem:
+      - 0
+      - 50
+    masked: true
+inductionheads_evaluation_(0):
+  class: InductionHeads
+  args:
+    kind: evaluation
+    size: 1000
+    length: 1024000
+    n_tokens: 16
+    t_mem:
+      - 0
+      - 50
+    masked: true
+inductionheads_train_(1):
+  class: InductionHeads
+  args:
+    kind: train
+    size: 20000
+    length:
+      - 35
+      - 512
+    n_tokens: 30
+    t_mem:
+      - 0
+      - 30
+    masked: true
+inductionheads_val_(1):
+  class: InductionHeads
+  args:
+    kind: val
+    size: 1000
+    length:
+      - 1024
+      - 2048
+    n_tokens: 30
+    t_mem:
+      - 0
+      - 50
+    masked: true
+inductionheads_evaluation_(1):
+  class: InductionHeads
+  args:
+    kind: evaluation
+    size: 1000
+    length: 1024000
+    n_tokens: 30
+    t_mem:
+      - 0
+      - 50
+    masked: true

@@ -1,0 +1,43 @@
+# Experiment templates.
+#
+# Each template defines the benchmark task (datasets, loss, metric) and
+# the list of models to compare. Add model/trainer pairs to models_trainers.
+#
+# Template keys use {N:int} to parameterise over multiple problem sizes.
+# The experiments.yaml file then enables specific instances, e.g. latching_(1).
+
+'latching_{N:int}':
+  class: Experiment
+  args:
+    epochs: 30
+    train_dataset: latching_train_({N})
+    val_dataset: latching_val_({N})
+    loss: CrossEntropyLoss
+    metric: TokenAccuracy
+    models_trainers:
+      - model: minmaxrnc__d_(90)__l_(2)__s_(40)
+        trainer: trainer_default
+
+'sequences_{N:int}':
+  class: Experiment
+  args:
+    epochs: 30
+    train_dataset: sequences_train_({N})
+    val_dataset: sequences_val_({N})
+    loss: CrossEntropyLoss
+    metric: TokenAccuracy
+    models_trainers:
+      - model: minmaxrnc__d_(90)__l_({N}+1)__s_(40)
+        trainer: trainer_default
+
+'inductionheads_{N:int}':
+  class: Experiment
+  args:
+    epochs: 30
+    train_dataset: inductionheads_train_({N})
+    val_dataset: inductionheads_val_({N})
+    loss: CrossEntropyLoss
+    metric: TokenAccuracy
+    models_trainers:
+      - model: minmaxrnc__d_(90)__l_(2)__s_(40)
+        trainer: trainer_default

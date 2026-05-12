@@ -1,0 +1,10 @@
+none:
+  class: NoneScheduler
+  pretty_name: None
+  args: {}
+step:
+  class: StepLR
+  pretty_name: Step
+  args:
+    step_size: 5
+    gamma: 0.5

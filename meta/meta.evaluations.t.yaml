@@ -1,0 +1,25 @@
+
+'latching_{N:int}':
+  enabled: true
+  class: Evaluation
+  args:
+    experiment: latching_({N})
+    metric: ChunkedTokenAccuracy
+    dataset: latching_evaluation_({N})
+
+'sequences_{N:int}':
+  enabled: true
+  class: Evaluation
+  args:
+    experiment: sequences_({N})
+    metric: ChunkedTokenAccuracy
+    dataset: sequences_evaluation_({N})
+
+'inductionheads_{N:int}':
+  enabled: true
+  class: Evaluation
+  args:
+    experiment: inductionheads_({N})
+    metric: ChunkedTokenAccuracy
+    dataset: inductionheads_evaluation_({N})
+

@@ -1,0 +1,6 @@
+TokenAccuracy:
+  class: TokenAccuracy
+  args: {}
+ChunkedTokenAccuracy:
+  class: ChunkedTokenAccuracy
+  args: {}

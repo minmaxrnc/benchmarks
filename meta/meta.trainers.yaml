@@ -1,0 +1,8 @@
+trainer_default:
+  class: Trainer
+  args:
+    optimizer: adam
+    scheduler: step
+    lr: 0.001
+    train_batch_size: 64
+

@@ -1,0 +1,30 @@
+num_workers: 2
+train_drop_last: true
+val_drop_last: true
+evaluation_drop_last: true
+ci_accuracy_val: 0.001
+ci_confidence: 0.99
+ci_min_n: 3
+ci_max_n: 10
+ci_accuracy__cum:
+  - [0.5, 0.2]
+  - [0.8, 0.1]
+  - [0.9, 0.05]
+  - [1.0, 0.01]
+ci_accuracy__min:
+  - [0.5, 0.2]
+  - [0.8, 0.1]
+  - [0.9, 0.05]
+  - [1.0, 0.01]
+max_train_runtime: 14400
+max_train_runtime__per_params: 14400
+max_train_runtime__per_seed: 14400
+max_eval_runtime: 72000
+stopper__enabled: true
+stopper__mode: min
+stopper__window: 3
+stopper__patience: 5
+stopper__min_delta: 1e-05
+stopper__debias: false
+saved_dataset_part__threshold_bytes: 1073741824
+learning_dynamics_tracker__enabled: false

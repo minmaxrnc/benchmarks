@@ -1,0 +1,3 @@
+CrossEntropyLoss:
+  class: CrossEntropyLoss
+  args: {}

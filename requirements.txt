@@ -1,0 +1,7 @@
+torch
+minmaxrnc
+pyyaml
+tqdm
+numpy
+tensorboard
+pytest

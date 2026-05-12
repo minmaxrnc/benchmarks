@@ -1,0 +1,4 @@
+Evaluator:
+  class: Evaluator
+  args:
+    chunk_size: 1024

@@ -1,0 +1,58 @@
+# Model configurations.
+#
+# Each entry defines a named model that can be referenced in experiments.
+# The 'class' field must match a class registered via benchmarks.register_model().
+# Template parameters are written as {N:int} in keys and {N} in values.
+#
+# Example (place your model package under models/mymodel/__init__.py):
+#
+# 'mymodel__layers_{N:int}__small':
+#   class: MyModel_LM
+#   args:
+#     n_blocks: '{N}'
+#     d_model: 90
+#     d_state: 40
+
+# ------------------------------------------------------------------
+# MinMax RNC
+# ------------------------------------------------------------------
+
+# Fully parameterised: d_model, n_layers, d_state
+'minmaxrnc__d_{D:int}__l_{L:int}__s_{S:int}':
+  class: MinMaxRNC_LM
+  args:
+    n_layers: '{L}'
+    d_model: '{D}'
+    d_state: '{S}'
+
+# Named presets (d_model / d_state fixed, n_layers is free)
+'minmaxrnc_small__l_{L:int}':
+  class: MinMaxRNC_LM
+  args:
+    n_layers: '{L}'
+    d_model: 90
+    d_state: 40
+
+'minmaxrnc_medium__l_{L:int}':
+  class: MinMaxRNC_LM
+  args:
+    n_layers: '{L}'
+    d_model: 512
+    d_state: 512
+
+'minmaxrnc_large__l_{L:int}':
+  class: MinMaxRNC_LM
+  args:
+    n_layers: '{L}'
+    d_model: 728
+    d_state: 1456
+
+# ------------------------------------------------------------------
+# Vanilla RNN (baseline)
+# ------------------------------------------------------------------
+
+'vanilla_rnn__d_{D:int}__l_{L:int}':
+  class: VanillaRNN
+  args:
+    d_model: '{D}'
+    n_layers: '{L}'
