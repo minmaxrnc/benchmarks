@@ -33,7 +33,7 @@ stopper__enabled: true
 stopper__mode: min
 stopper__window: 3
 stopper__patience: 5
-stopper__min_delta: 1e-05
+stopper__min_delta: 1.0e-05
 stopper__debias: false
 saved_dataset_part__threshold_bytes: 1073741824
 learning_dynamics_tracker__enabled: false
