@@ -8,7 +8,7 @@
 # at your option any later version.
 
 import torch
-from minmax import MinMaxRNC_LM as _MinMaxRNC_LM, MinMaxRNCLMConfig, MinMaxRNCConfig
+from minmaxrnc import MinMaxRNC_LM as _MinMaxRNC_LM, MinMaxRNCLMConfig, MinMaxRNCConfig
 from benchmarks.models.model import Model
 
 
