@@ -1,0 +1,29 @@
+# Generated files
+datasets/
+outputs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+src/venv/
+.venv/
+venv/
+
+# Tools
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# macOS
+.DS_Store
+
