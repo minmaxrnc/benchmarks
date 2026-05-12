@@ -25,7 +25,7 @@ pip install -r requirements.txt
 ## Plugging in a model
 
 The framework ships two models out of the box: a vanilla RNN (included as a basic example) and
-[MinMax RNC](https://github.com/minmaxrnc/model) (installed via the requirements above). 
+[MinMax RNC](https://github.com/minmaxrnc/model) (installed via the requirements above).
 You can also plug in your own model in two steps.
 
 ### Step 1 — register the Python class
@@ -50,11 +50,24 @@ class MyModel_LM(Model):
         super().__init__(name)
         # build your model here
 
-    def forward(self, x):
-        # x: (batch, seq_len) int tensor
-        # return: (batch, seq_len, vocab_size) float logits
+    def forward(self, x, state=None, unroll_steps=-1, return_state=False):
+        # x:           (batch, seq_len) int tensor
+        # return:      (batch, seq_len, vocab_size) float logits
+        #              or (logits, new_state) if return_state is True
         ...
+
+    def supports_unroll_steps(self):
+        # Return True if forward() uses the unroll_steps argument.
+        # The trainer and evaluator only pass unroll_steps when this returns True.
+        # The base class returns False; override only when your model supports it.
+        return False
 ```
+
+The `unroll_steps` argument chunks the sequence into pieces of that length before passing them
+through the model recurrently. It is useful for models with an explicit recurrent state that can
+process the sequence incrementally — it trades a small amount of extra sequential work for a large
+reduction in peak memory. For models not supporting `unroll_steps`, the parameter should have no
+effect. 
 
 ### Step 2 — add config entries
 
@@ -287,7 +300,7 @@ groups:
    title   = {Benchmarks},
    year    = {2026},
    url     = {https://github.com/minmaxrnc/benchmarks},
-   version = {0.1.0},
+   version = {0.1.1},
  }
  ```
 
@@ -295,13 +308,3 @@ groups:
 
 This project is licensed under the GNU General Public License v3.0 or later.
 See the `LICENSE` file for details.
-
-
----
-
-Copyright (C) 2026 Alessandro Ronca
-
-minmaxrnc/benchmarks is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-at your option any later version.
