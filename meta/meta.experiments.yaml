@@ -11,44 +11,44 @@ latching_(1):
   enabled: true
   from_template: true
 latching_(2):
-  enabled: false
+  enabled: true
   from_template: true
 latching_(3):
-  enabled: false
+  enabled: true
   from_template: true
 latching_(4):
-  enabled: false
+  enabled: true
   from_template: true
 latching_(5):
-  enabled: false
+  enabled: true
   from_template: true
 latching_(6):
-  enabled: false
+  enabled: true
   from_template: true
 latching_(7):
-  enabled: false
+  enabled: true
   from_template: true
 latching_(8):
-  enabled: false
+  enabled: true
   from_template: true
 sequences_(1):
   enabled: true
   from_template: true
 sequences_(2):
-  enabled: false
+  enabled: true
   from_template: true
 sequences_(3):
-  enabled: false
+  enabled: true
   from_template: true
 sequences_(4):
-  enabled: false
+  enabled: true
   from_template: true
 sequences_(5):
-  enabled: false
+  enabled: true
   from_template: true
 inductionheads_(0):
   enabled: true
   from_template: true
 inductionheads_(1):
-  enabled: false
+  enabled: true
   from_template: true
