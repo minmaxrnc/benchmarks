@@ -20,26 +20,27 @@ META_DATE_FORMAT    = 'dd/mm/yyyy'
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-OUTPUT_DIR_BASE = os.environ.get("OUTPUT_DIR_BASE", ".")
+DATA_DIR = os.environ.get("DATA_DIR", ".")
 
 OUTPUT_DIR = os.path.join(
-    OUTPUT_DIR_BASE,
+    DATA_DIR,
     "outputs"
 )
 
 EXPERIMENTS_OUTPUT_DIR = os.path.join(
-        OUTPUT_DIR,
-        "experiments"
-        )
+    OUTPUT_DIR,
+    "experiments"
+)
 
 EVALUATIONS_OUTPUT_DIR = os.path.join(
-        OUTPUT_DIR,
-        "evaluations"
-        )
+    OUTPUT_DIR,
+    "evaluations"
+)
 
 SAVED_DATASET_OUTPUT_DIR = os.path.join(
-        "datasets"
-        )
+    DATA_DIR,
+    "datasets"
+)
 
 
 IGNORE_INDEX = -1
