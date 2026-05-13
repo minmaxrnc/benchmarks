@@ -19,7 +19,7 @@ META_DATE_FORMAT    = 'dd/mm/yyyy'
 OUTPUT_DIR_BASE = os.environ.get("OUTPUT_DIR_BASE", ".")
 
 OUTPUT_DIR = os.path.join(
-    OUTPUT_BASE,
+    OUTPUT_DIR_BASE,
     "outputs"
 )
 
