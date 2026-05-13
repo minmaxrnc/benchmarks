@@ -35,6 +35,43 @@
     d_model: '{D}'
     d_state: '{S}'
 
+# Four architectural variants: output_gate ∈ {True, False} × conv_type ∈ {'basic', 'gated'}
+'minmaxrnc__d_{D:int}__l_{L:int}__s_{S:int}__og_true__cv_basic':
+  class: MinMaxRNC_LM
+  args:
+    n_layers: '{L}'
+    d_model: '{D}'
+    d_state: '{S}'
+    output_gate: true
+    conv_type: basic
+
+'minmaxrnc__d_{D:int}__l_{L:int}__s_{S:int}__og_true__cv_gated':
+  class: MinMaxRNC_LM
+  args:
+    n_layers: '{L}'
+    d_model: '{D}'
+    d_state: '{S}'
+    output_gate: true
+    conv_type: gated
+
+'minmaxrnc__d_{D:int}__l_{L:int}__s_{S:int}__og_false__cv_basic':
+  class: MinMaxRNC_LM
+  args:
+    n_layers: '{L}'
+    d_model: '{D}'
+    d_state: '{S}'
+    output_gate: false
+    conv_type: basic
+
+'minmaxrnc__d_{D:int}__l_{L:int}__s_{S:int}__og_false__cv_gated':
+  class: MinMaxRNC_LM
+  args:
+    n_layers: '{L}'
+    d_model: '{D}'
+    d_state: '{S}'
+    output_gate: false
+    conv_type: gated
+
 # Named presets (d_model / d_state fixed, n_layers is free)
 'minmaxrnc_small__l_{L:int}':
   class: MinMaxRNC_LM
