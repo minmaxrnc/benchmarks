@@ -8,7 +8,7 @@
 # at your option any later version.
 
 import argparse
-from ..definitions import tqdm
+from ..utils.tqdm import tqdm
 
 from ..utils import meta
 from ..datasets.datasets import datasets
