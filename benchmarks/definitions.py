@@ -18,7 +18,7 @@ META_TYPE_SEPARATOR = ':'
 META_DATE_FORMAT    = 'dd/mm/yyyy'
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 OUTPUT_DIR_BASE = os.environ.get("OUTPUT_DIR_BASE", ".")
 
