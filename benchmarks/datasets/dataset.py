@@ -12,7 +12,6 @@ from torch.utils.data import Dataset as TorchDataset
 from torch.utils.data import DataLoader
 from dataclasses import dataclass
 from torch.utils.data import get_worker_info
-from tqdm.auto import tqdm, trange
 import os
 import sys
 import json
@@ -27,6 +26,7 @@ from .utils.collate import make_collate_fn, make_merge_collate_fn
 from .utils.saved_datasets_manager import SavedDatasetsManager
 from .utils.estimate_bytes import compute_sample_bytes
 from .utils.io_dtype import optimal_io_dtype
+from ..utils.tqdm import tqdm, trange
 
 from ..utils import config
 from ..utils.misc import zip_dir, unzip

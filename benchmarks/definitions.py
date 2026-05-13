@@ -50,9 +50,3 @@ SAVED_DATASETS_THRESHOLD = 50 * 1024**3  # 50 GiB (53,687,091,200 bytes)
 TQDM_MININTERVAL = 0.5
 TQDM_MININTERVAL_LONG = 300
 
-TQDM_NOTEBOOK = os.environ.get("TQDM_NOTEBOOK", "0") == "1"
-if TQDM_NOTEBOOK:
-    from tqdm.notebook import tqdm, trange
-else:
-    from tqdm.auto import tqdm, trange
-

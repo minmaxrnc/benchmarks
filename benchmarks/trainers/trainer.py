@@ -11,7 +11,6 @@ from typing import Callable, Dict, Optional, Any, List, Union
 from torch import cuda
 import os, csv
 import torch
-from ..definitions import tqdm
 import json
 from itertools import product
 
@@ -29,6 +28,7 @@ from ..utils.seed import Seeds, seed_everything
 from ..utils.ci import ConfidenceIntervals
 from ..utils.timer import Timer
 from ..utils.format import format_accuracy, format_loss
+from ..utils.tqdm import tqdm
 
 from ..definitions import TQDM_MININTERVAL
 

@@ -11,7 +11,6 @@ import os
 import csv
 import torch
 import math
-from ..definitions import tqdm, trange
 import json
 from pathlib import Path
 from datetime import datetime
@@ -23,6 +22,7 @@ from ..utils.ci import ConfidenceIntervals
 from ..utils.timer import Timer
 from ..utils.misc import pjoin
 from ..utils.gpumem import gpu_memory, bytes2miB
+from ..utils.tqdm import tqdm, trange
 
 from ..models.utils import _nbytes
 from ..datasets import datasets
