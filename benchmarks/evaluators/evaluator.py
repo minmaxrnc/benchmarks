@@ -11,7 +11,7 @@ import os
 import csv
 import torch
 import math
-from tqdm.auto import tqdm, trange
+from ..definitions import tqdm, trange
 import json
 from pathlib import Path
 from datetime import datetime

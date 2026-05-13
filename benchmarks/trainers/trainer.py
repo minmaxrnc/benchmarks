@@ -11,7 +11,7 @@ from typing import Callable, Dict, Optional, Any, List, Union
 from torch import cuda
 import os, csv
 import torch
-from tqdm.auto import tqdm
+from ..definitions import tqdm
 import json
 from itertools import product
 
