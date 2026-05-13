@@ -300,7 +300,7 @@ groups:
    title   = {Benchmarks},
    year    = {2026},
    url     = {https://github.com/minmaxrnc/benchmarks},
-   version = {0.1.1},
+   version = {0.1.2},
  }
  ```
 
