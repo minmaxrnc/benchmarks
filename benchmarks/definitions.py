@@ -8,6 +8,7 @@
 # at your option any later version.
 
 import os, sys
+from pathlib import Path
 
 META_MAIN_FILENAME  = 'meta/meta.yaml'
 META_IMPORT_LITERAL = '__import__'
@@ -15,6 +16,9 @@ META_ALL_LITERAL    = '__all__'
 META_AS_LITERAL     = '__as__'
 META_TYPE_SEPARATOR = ':'
 META_DATE_FORMAT    = 'dd/mm/yyyy'
+
+
+PROJECT_ROOT = Path(__file__).resolve().parent
 
 OUTPUT_DIR_BASE = os.environ.get("OUTPUT_DIR_BASE", ".")
 
