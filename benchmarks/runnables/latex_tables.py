@@ -7,6 +7,7 @@
 # the Free Software Foundation, either version 3 of the License, or
 # at your option any later version.
 
+import math
 import os
 import csv
 import glob
@@ -16,8 +17,6 @@ from collections import defaultdict
 from pathlib import Path
 
 from ..definitions import EXPERIMENTS_OUTPUT_DIR, OUTPUT_DIR, PROJECT_ROOT
-from ..utils.ci import ConfidenceIntervals
-from ..utils import config
 
 TABLES_DIR = os.path.join(OUTPUT_DIR, 'tables')
 
@@ -122,12 +121,16 @@ def _count_perfect(seed_results):
     return sum(1 for v in seed_results if v >= 1.0), len(seed_results)
 
 
-def _bootstrap_ci(seed_results):
-    """Bootstrap CI for convergence probability using binary [0,1] scores."""
-    binary = [1.0 if v >= 1.0 else 0.0 for v in seed_results]
-    delta = 1.0 - config.get('ci_confidence')
-    _, low, high = ConfidenceIntervals().mean_bootstrap(binary, delta)
-    return low, high
+def _wilson_ci(n, N):
+    """Wilson score interval for proportion n/N at 95% confidence."""
+    if N == 0:
+        return 0.0, 1.0
+    z = 1.96
+    p = n / N
+    denom = 1 + z * z / N
+    center = (p + z * z / (2 * N)) / denom
+    spread = z / denom * math.sqrt(p * (1 - p) / N + z * z / (4 * N * N))
+    return max(0.0, center - spread), min(1.0, center + spread)
 
 
 # ---------------------------------------------------------------------------
@@ -229,6 +232,18 @@ def _build_name_registry(all_dir_names):
 
 
 # ---------------------------------------------------------------------------
+# Cell rendering
+# ---------------------------------------------------------------------------
+
+def _result_cell(seed_results):
+    if not seed_results:
+        return r'\textemdash'
+    n, N   = _count_perfect(seed_results)
+    lo, hi = _wilson_ci(n, N)
+    return f'${n}/{N}\\ [{lo:.2f},\\,{hi:.2f}]$'
+
+
+# ---------------------------------------------------------------------------
 # Column label
 # ---------------------------------------------------------------------------
 
@@ -244,23 +259,6 @@ def _col_label(family, instance_num):
 
 def _latex_tt(s):
     return r'\texttt{' + s.replace('_', r'\_') + '}'
-
-
-def _convergence_cell(n, N):
-    if N == 0:
-        return r'\textemdash'
-    if n == N:
-        return r'\checkmark'
-    return f'{n}/{N}'
-
-
-def _ci_cell(seed_results):
-    if not seed_results:
-        return r'\textemdash'
-    lo, hi = _bootstrap_ci(seed_results)
-    mid    = (lo + hi) / 2 * 100
-    margin = (hi - lo) / 2 * 100
-    return f'${mid:.1f} \\pm {margin:.1f}$'
 
 
 def _render_table(family, col_labels, row_keys, row_labels, cells, caption, label):
@@ -305,7 +303,7 @@ def _render_legend_table(label_to_full):
 # Main entry point
 # ---------------------------------------------------------------------------
 
-def _build_family_tables(family, instances, exp_to_dirs, dir_to_label):
+def _build_family_table(family, instances, exp_to_dirs, dir_to_label):
     row_params = _find_row_params(exp_to_dirs)
 
     seen_row_keys = {}
@@ -319,8 +317,7 @@ def _build_family_tables(family, instances, exp_to_dirs, dir_to_label):
     col_labels = [_col_label(family, inst_num) for inst_num, _ in instances]
     row_labels = {rk: dir_to_label[seen_row_keys[rk]] for rk in row_keys}
 
-    conv_cells = {rk: {} for rk in row_keys}
-    ci_cells   = {rk: {} for rk in row_keys}
+    cells = {rk: {} for rk in row_keys}
 
     for inst_num, exp_name in instances:
         col     = _col_label(family, inst_num)
@@ -329,31 +326,19 @@ def _build_family_tables(family, instances, exp_to_dirs, dir_to_label):
 
         for rk in row_keys:
             if rk not in rk_to_dir:
-                conv_cells[rk][col] = r'\textemdash'
-                ci_cells[rk][col]   = r'\textemdash'
+                cells[rk][col] = r'\textemdash'
                 continue
             mt_path      = os.path.join(exp_dir, rk_to_dir[rk])
             seed_results = _load_seed_results(mt_path)
-            n, N         = _count_perfect(seed_results)
-            conv_cells[rk][col] = _convergence_cell(n, N)
-            ci_cells[rk][col]   = _ci_cell(seed_results)
+            cells[rk][col] = _result_cell(seed_results)
 
     family_title = family.capitalize()
-
-    conv_table = _render_table(
-        family, col_labels, row_keys, row_labels, conv_cells,
+    return _render_table(
+        family, col_labels, row_keys, row_labels, cells,
         caption=(f'Convergence to perfect accuracy on {family_title} datasets. '
-                 r'\checkmark: all seeds converged; $n/N$: only $n$ out of $N$ seeds converged.'),
-        label=f'tab:{family}_convergence',
+                 r'Cells show $n/N$ (seeds converged / total) followed by the Wilson 95\% CI.'),
+        label=f'tab:{family}',
     )
-    ci_table = _render_table(
-        family, col_labels, row_keys, row_labels, ci_cells,
-        caption=(f'Bootstrap confidence intervals ({config.get("ci_confidence")} level) '
-                 f'for convergence probability on {family_title} datasets. '
-                 r'Cells show mean $\pm$ margin.'),
-        label=f'tab:{family}_ci',
-    )
-    return conv_table, ci_table
 
 
 _MACROS_CONTENT = r"""% Macro definitions for benchmark tables.
@@ -399,13 +384,8 @@ def run():
 
     for family, (instances, exp_to_dirs) in family_data.items():
         print(f'\n# Family: {family}  ({len(instances)} dataset instances)')
-        conv_table, ci_table = _build_family_tables(family, instances, exp_to_dirs, dir_to_label)
+        table = _build_family_table(family, instances, exp_to_dirs, dir_to_label)
 
-        conv_path = os.path.join(TABLES_DIR, f'{family}_convergence.tex')
-        ci_path   = os.path.join(TABLES_DIR, f'{family}_ci.tex')
-
-        Path(conv_path).write_text(conv_table + '\n', encoding='utf-8')
-        Path(ci_path).write_text(ci_table + '\n', encoding='utf-8')
-
-        print(f'  Written: {conv_path}')
-        print(f'  Written: {ci_path}')
+        path = os.path.join(TABLES_DIR, f'{family}.tex')
+        Path(path).write_text(table + '\n', encoding='utf-8')
+        print(f'  Written: {path}')

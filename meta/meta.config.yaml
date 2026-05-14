@@ -13,7 +13,7 @@ val_drop_last: true
 evaluation_drop_last: true
 ci_accuracy_val: 0.001
 ci_confidence: 0.99
-ci_min_n: 3
+ci_min_n: 10
 ci_max_n: 10
 ci_accuracy__cum:
   - [0.5, 0.2]
