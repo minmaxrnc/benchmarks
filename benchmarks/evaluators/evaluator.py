@@ -22,7 +22,7 @@ from ..utils.ci import ConfidenceIntervals
 from ..utils.timer import Timer
 from ..utils.misc import pjoin
 from ..utils.gpumem import gpu_memory, bytes2miB
-from tqdm.auto import tqdm, trange
+from ..utils.tqdm import tqdm, trange
 
 from ..models.utils import _nbytes
 from ..datasets import datasets
