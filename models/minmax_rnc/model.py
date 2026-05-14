@@ -38,6 +38,7 @@ class MinMaxRNC_LM(Model):
         head_dropout:         float = 0.0,
         tie_weights:          bool  = True,
         default_unroll_steps: int   = 64,
+        s_r_init:             str   = 'small_init',
         **backbone_kwargs,
     ):
         super().__init__(name)
@@ -47,6 +48,7 @@ class MinMaxRNC_LM(Model):
             d_model  = d_model,
             n_layers = n_layers,
             d_state  = d_state,
+            s_r_init = s_r_init,
             **backbone_kwargs,
         )
         self._lm_cfg = MinMaxRNCLMConfig(

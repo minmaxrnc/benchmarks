@@ -77,6 +77,51 @@
     output_gate: false
     conv_type: gated
 
+# Kaiming init variants for s and r projections
+'minmaxrnc__d_{D:int}__l_{L:int}__s_{S:int}__og_true__cv_basic__sri_kaiming':
+  class: MinMaxRNC_LM
+  pretty_name: MinMax (Kaiming s/r)
+  args:
+    n_layers: '{L}'
+    d_model: '{D}'
+    d_state: '{S}'
+    output_gate: true
+    conv_type: basic
+    s_r_init: kaiming
+
+'minmaxrnc__d_{D:int}__l_{L:int}__s_{S:int}__og_true__cv_gated__sri_kaiming':
+  class: MinMaxRNC_LM
+  pretty_name: MinMax (Kaiming s/r)
+  args:
+    n_layers: '{L}'
+    d_model: '{D}'
+    d_state: '{S}'
+    output_gate: true
+    conv_type: gated
+    s_r_init: kaiming
+
+'minmaxrnc__d_{D:int}__l_{L:int}__s_{S:int}__og_false__cv_basic__sri_kaiming':
+  class: MinMaxRNC_LM
+  pretty_name: MinMax (Kaiming s/r)
+  args:
+    n_layers: '{L}'
+    d_model: '{D}'
+    d_state: '{S}'
+    output_gate: false
+    conv_type: basic
+    s_r_init: kaiming
+
+'minmaxrnc__d_{D:int}__l_{L:int}__s_{S:int}__og_false__cv_gated__sri_kaiming':
+  class: MinMaxRNC_LM
+  pretty_name: MinMax (Kaiming s/r)
+  args:
+    n_layers: '{L}'
+    d_model: '{D}'
+    d_state: '{S}'
+    output_gate: false
+    conv_type: gated
+    s_r_init: kaiming
+
 # Named presets (d_model / d_state fixed, n_layers is free)
 'minmaxrnc_small__l_{L:int}':
   class: MinMaxRNC_LM
