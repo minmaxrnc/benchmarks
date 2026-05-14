@@ -28,7 +28,7 @@ from ..utils.seed import Seeds, seed_everything
 from ..utils.ci import ConfidenceIntervals
 from ..utils.timer import Timer
 from ..utils.format import format_accuracy, format_loss
-from ..utils.tqdm import tqdm
+from tqdm.auto import tqdm
 
 from ..definitions import TQDM_MININTERVAL
 
