@@ -1,13 +1,18 @@
 import sys
-from tqdm.auto import tqdm as _tqdm, trange as _trange
+from tqdm import tqdm as _tqdm, trange as _trange
 
-_IS_COLAB = 'google.colab' in sys.modules
-_IS_TTY = sys.stderr.isatty() and not _IS_COLAB
+
+def _disabled():
+    if not sys.stderr.isatty():
+        return True
+    if 'google.colab' in sys.modules:
+        return True
+    return False
 
 
 class tqdm(_tqdm):
     def __init__(self, iterable=None, *args, **kwargs):
-        if not _IS_TTY:
+        if _disabled():
             desc = kwargs.get('desc')
             if desc:
                 print(f"{desc}...", flush=True)
@@ -18,14 +23,14 @@ class tqdm(_tqdm):
 
     @staticmethod
     def write(s, file=None, end='\n', nolock=False):
-        if _IS_TTY:
-            _tqdm.write(s, file=file, end=end, nolock=nolock)
-        else:
+        if _disabled():
             print(s, end=end, flush=True)
+        else:
+            _tqdm.write(s, file=file, end=end, nolock=nolock)
 
 
 def trange(*args, **kwargs):
-    if not _IS_TTY:
+    if _disabled():
         desc = kwargs.get('desc')
         if desc:
             print(f"{desc}...", flush=True)
