@@ -23,37 +23,28 @@ import zipfile
 
 def run(*argv):
     parser = argparse.ArgumentParser(
-        description="Provide exactly one of: --experiment NAME, or --evaluation NAME."
+        description="Generate datasets. Without flags generates all datasets."
     )
 
-    # Mutually exclusive options
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
-        "-x", "--experiment",
-        metavar="NAME",
-        help="Experiment name"
-    )
-    group.add_argument(
-        "-e", "--evaluation",
-        metavar="NAME",
-        help="Evaluation name"
-    )
-    group.add_argument(
-        '-a', '--all',
+        "-x", "--experiments",
         action='store_true',
-        help='Generate all datasets'
+        help="Generate only experiment datasets (train + validation)"
+    )
+    group.add_argument(
+        "-e", "--evaluations",
+        action='store_true',
+        help="Generate only evaluation datasets"
+    )
+    parser.add_argument(
+        "-s", "--select",
+        metavar="PREFIX",
+        default=None,
+        help="Generate only datasets for experiments/evaluations whose name starts with PREFIX"
     )
 
     args = parser.parse_args(argv)
-
-    # Enforce exactly one of the three
-    chosen = sum([
-        args.experiment is not None,
-        args.evaluation is not None,
-        args.all
-    ])
-    if chosen != 1:
-        parser.error("Provide exactly one of: --experiment NAME, --evaluation NAME, or --all")
 
     def _generate_dataset(dataset_name, long_seqs):
         n_seeds = config.get('ci_max_n')
@@ -78,13 +69,36 @@ def run(*argv):
         print(f"\n# Generating *evaluation* dataset for evaluation '{experiments.repr(evaluation)}'")
         _generate_dataset(evaluation_args['dataset'], long_seqs=True)
 
-    if args.experiment is not None:
-        _generate_for_experiment(args.experiment)
-    elif args.evaluation is not None:
-        _generate_for_experiment(args.evaluation)
+    if args.experiments:
+        experiments_meta = meta.load('experiments', only_enabled=True)
+        if args.select:
+            experiments_meta = [e for e in experiments_meta if e.startswith(args.select)]
+
+        print('\nWill generate datasets for the following experiments:')
+        for experiment in experiments_meta:
+            print(f"    - {experiments.str(experiment)}")
+
+        for experiment in experiments_meta:
+            _generate_for_experiment(experiment)
+
+    elif args.evaluations:
+        evaluations_meta = meta.load('evaluations', only_enabled=True)
+        if args.select:
+            evaluations_meta = [e for e in evaluations_meta if e.startswith(args.select)]
+
+        print('\nWill generate datasets for the following evaluations:')
+        for evaluation in evaluations_meta:
+            print(f"    - {evaluations.str(evaluation)}")
+
+        for evaluation in evaluations_meta:
+            _generate_for_evaluation(evaluation)
+
     else:
         experiments_meta = meta.load('experiments', only_enabled=True)
         evaluations_meta = meta.load('evaluations', only_enabled=True)
+        if args.select:
+            experiments_meta = [e for e in experiments_meta if e.startswith(args.select)]
+            evaluations_meta = [e for e in evaluations_meta if e.startswith(args.select)]
 
         print('\nWill generate datasets for the following:')
         print('  Experiments:')

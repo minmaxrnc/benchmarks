@@ -110,8 +110,8 @@ Template keys (`{N:int}`) are expanded when an experiment references a specific 
 ## Running benchmarks
 
 ```bash
-# Generate and save datasets to disk
-python main.py generate --all
+# Generate and save all datasets to disk
+python main.py generate
 
 # Train all enabled experiments
 python main.py train
