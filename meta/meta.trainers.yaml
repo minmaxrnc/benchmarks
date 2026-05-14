@@ -9,6 +9,7 @@
 
 trainer_default:
   class: Trainer
+  pretty_name: Default
   args:
     optimizer: adam
     scheduler: step

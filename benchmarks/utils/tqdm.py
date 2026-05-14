@@ -1,7 +1,8 @@
 import sys
 from tqdm.auto import tqdm as _tqdm, trange as _trange
 
-_IS_TTY = sys.stderr.isatty()
+_IS_COLAB = 'google.colab' in sys.modules
+_IS_TTY = sys.stderr.isatty() and not _IS_COLAB
 
 
 class tqdm(_tqdm):

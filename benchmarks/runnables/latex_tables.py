@@ -10,10 +10,12 @@
 import os
 import csv
 import glob
+import re
+import yaml
 from collections import defaultdict
 from pathlib import Path
 
-from ..definitions import EXPERIMENTS_OUTPUT_DIR, OUTPUT_DIR
+from ..definitions import EXPERIMENTS_OUTPUT_DIR, OUTPUT_DIR, PROJECT_ROOT
 from ..utils.ci import ConfidenceIntervals
 from ..utils import config
 
@@ -51,15 +53,11 @@ def _list_model_trainer_dirs(exp_dir):
 
 
 # ---------------------------------------------------------------------------
-# Parameter parsing
+# Parameter parsing  (used for row-key grouping across experiment instances)
 # ---------------------------------------------------------------------------
 
 def _parse_params(dirname):
-    """Parse model parameters from a model-trainer directory name.
-
-    Returns a dict with keys such as d, l, s, og, cv.
-    Strips the trailing __trainer_<name> suffix first.
-    """
+    """Parse model parameters from a model-trainer directory name."""
     model_part = dirname
     idx = model_part.rfind('__trainer_')
     if idx != -1:
@@ -80,11 +78,7 @@ def _parse_params(dirname):
 
 
 def _find_row_params(exp_to_dirs):
-    """Return the set of parameter names that vary *within* at least one experiment.
-
-    These are the params that distinguish model variants (rows) rather than
-    dataset instances (columns).
-    """
+    """Return parameter names that vary within at least one experiment."""
     within_varying = set()
     for dirs in exp_to_dirs.values():
         param_vals = defaultdict(set)
@@ -137,35 +131,106 @@ def _bootstrap_ci(seed_results):
 
 
 # ---------------------------------------------------------------------------
-# Label formatting
+# Pretty name registry
 # ---------------------------------------------------------------------------
 
-_PARAM_ORDER = ('og', 'cv', 's', 'l', 'd')
-
-_PARAM_LABELS = {
-    'og': {True: r'\cmark', 'true': r'\cmark', False: r'\xmark', 'false': r'\xmark'},
-    'cv': {'basic': 'basic', 'gated': 'gated'},
-}
-
-
-def _fmt_param(key, val):
-    if key == 'og':
-        mapped = _PARAM_LABELS['og'].get(val, str(val))
-        return f'OG={mapped}'
-    if key == 'cv':
-        return _PARAM_LABELS['cv'].get(val, str(val))
-    return f'${key}\\!=\\!{val}$'
+def _split_model_trainer(dirname):
+    """Split 'model__trainer_X' into ('model', 'trainer_X')."""
+    idx = dirname.rfind('__trainer_')
+    if idx == -1:
+        return dirname, ''
+    return dirname[:idx], dirname[idx + 2:]
 
 
-def _row_label(row_key_tuple, row_params):
-    """Human-readable LaTeX label for a model variant row."""
-    d = dict(row_key_tuple)
-    parts = []
-    for k in _PARAM_ORDER:
-        if k in row_params and k in d:
-            parts.append(_fmt_param(k, d[k]))
-    return ', '.join(parts) if parts else str(row_key_tuple)
+def _template_to_regex(template):
+    """Convert a meta template key to a regex that matches repr (parenthesis-free) dirnames."""
+    type_patterns = {
+        'int':   r'-?\d+',
+        'float': r'-?[\d.]+',
+        'str':   r'[^_]+',
+        'bool':  r'(?:true|false)',
+    }
+    result = ''
+    i = 0
+    while i < len(template):
+        if template[i] == '{':
+            j = template.index('}', i)
+            inside = template[i + 1:j]
+            type_name = inside.split(':')[1] if ':' in inside else 'str'
+            result += type_patterns.get(type_name, r'.+')
+            i = j + 1
+        else:
+            result += re.escape(template[i])
+            i += 1
+    return re.compile('^' + result + '$')
 
+
+def _build_name_registry(all_dir_names):
+    """Map every directory name to a short pretty label.
+
+    Returns:
+      dir_to_label: {dirname: 'MinMax/Default 1'}
+      label_to_full: ordered dict {label: (model_name, trainer_name)}
+    """
+    models_path  = os.path.join(PROJECT_ROOT, 'meta', 'meta.models.yaml')
+    trainers_path = os.path.join(PROJECT_ROOT, 'meta', 'meta.trainers.yaml')
+
+    with open(models_path) as f:
+        models_raw = yaml.safe_load(f) or {}
+    with open(trainers_path) as f:
+        trainers_raw = yaml.safe_load(f) or {}
+
+    model_patterns = [
+        (_template_to_regex(key), val.get('pretty_name', key))
+        for key, val in models_raw.items()
+        if isinstance(val, dict)
+    ]
+
+    trainer_pretty = {
+        key: val.get('pretty_name', key)
+        for key, val in trainers_raw.items()
+        if isinstance(val, dict)
+    }
+
+    def _model_pretty(model_name):
+        for pattern, pretty in model_patterns:
+            if pattern.match(model_name):
+                return pretty
+        return model_name
+
+    sorted_dirs = sorted(set(all_dir_names))
+
+    # First pass: resolve pretty names and find models with multiple trainers
+    dir_info = {}
+    model_trainers = defaultdict(set)
+    for dirname in sorted_dirs:
+        model_name, trainer_name = _split_model_trainer(dirname)
+        m_pretty = _model_pretty(model_name)
+        t_pretty = trainer_pretty.get(trainer_name, trainer_name)
+        dir_info[dirname] = (model_name, trainer_name, m_pretty, t_pretty)
+        model_trainers[m_pretty].add(t_pretty)
+
+    multi_trainer = {m for m, ts in model_trainers.items() if len(ts) > 1}
+
+    # Second pass: assign labels
+    group_counts = defaultdict(int)
+    dir_to_label = {}
+    label_to_full = {}
+
+    for dirname in sorted_dirs:
+        model_name, trainer_name, m_pretty, t_pretty = dir_info[dirname]
+        base = f'{m_pretty}/{t_pretty}' if m_pretty in multi_trainer else m_pretty
+        group_counts[base] += 1
+        label = f'{base} {group_counts[base]}'
+        dir_to_label[dirname] = label
+        label_to_full[label] = (model_name, trainer_name)
+
+    return dir_to_label, label_to_full
+
+
+# ---------------------------------------------------------------------------
+# Column label
+# ---------------------------------------------------------------------------
 
 def _col_label(family, instance_num):
     abbrev = {'latching': 'L', 'sequences': 'S', 'inductionheads': 'I'}
@@ -176,6 +241,10 @@ def _col_label(family, instance_num):
 # ---------------------------------------------------------------------------
 # Table rendering
 # ---------------------------------------------------------------------------
+
+def _latex_tt(s):
+    return r'\texttt{' + s.replace('_', r'\_') + '}'
+
 
 def _convergence_cell(n, N):
     if N == 0:
@@ -189,7 +258,9 @@ def _ci_cell(seed_results):
     if not seed_results:
         return r'\textemdash'
     lo, hi = _bootstrap_ci(seed_results)
-    return f'$[{lo:.2f},\\,{hi:.2f}]$'
+    mid    = (lo + hi) / 2 * 100
+    margin = (hi - lo) / 2 * 100
+    return f'${mid:.1f} \\pm {margin:.1f}$'
 
 
 def _render_table(family, col_labels, row_keys, row_labels, cells, caption, label):
@@ -200,12 +271,10 @@ def _render_table(family, col_labels, row_keys, row_labels, cells, caption, labe
     lines.append(r'\centering')
     lines.append(r'\begin{tabular}{' + col_spec + '}')
     lines.append(r'\toprule')
-    header = 'Model & ' + ' & '.join(col_labels) + r' \\'
-    lines.append(header)
+    lines.append('Model & ' + ' & '.join(col_labels) + r' \\')
     lines.append(r'\midrule')
     for rk in row_keys:
-        row_str = row_labels[rk] + ' & ' + ' & '.join(cells[rk][c] for c in col_labels) + r' \\'
-        lines.append(row_str)
+        lines.append(row_labels[rk] + ' & ' + ' & '.join(cells[rk][c] for c in col_labels) + r' \\')
     lines.append(r'\bottomrule')
     lines.append(r'\end{tabular}')
     lines.append(r'\caption{' + caption + '}')
@@ -214,19 +283,31 @@ def _render_table(family, col_labels, row_keys, row_labels, cells, caption, labe
     return '\n'.join(lines)
 
 
+def _render_legend_table(label_to_full):
+    lines = []
+    lines.append(r'\begin{table}[ht]')
+    lines.append(r'\centering')
+    lines.append(r'\begin{tabular}{lll}')
+    lines.append(r'\toprule')
+    lines.append(r'Name & Model & Trainer \\')
+    lines.append(r'\midrule')
+    for label, (model_name, trainer_name) in label_to_full.items():
+        lines.append(label + ' & ' + _latex_tt(model_name) + ' & ' + _latex_tt(trainer_name) + r' \\')
+    lines.append(r'\bottomrule')
+    lines.append(r'\end{tabular}')
+    lines.append(r'\caption{Model--trainer abbreviations used in the benchmark tables.}')
+    lines.append(r'\label{tab:legend}')
+    lines.append(r'\end{table}')
+    return '\n'.join(lines)
+
+
 # ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
 
-def _build_family_tables(family, instances):
-    exp_to_dirs = {}
-    for inst_num, exp_name in instances:
-        exp_dir = os.path.join(EXPERIMENTS_OUTPUT_DIR, exp_name)
-        exp_to_dirs[exp_name] = _list_model_trainer_dirs(exp_dir)
-
+def _build_family_tables(family, instances, exp_to_dirs, dir_to_label):
     row_params = _find_row_params(exp_to_dirs)
 
-    # Collect all row keys in a stable order (first seen, sorted)
     seen_row_keys = {}
     for inst_num, exp_name in instances:
         for d in exp_to_dirs[exp_name]:
@@ -234,73 +315,94 @@ def _build_family_tables(family, instances):
             if rk not in seen_row_keys:
                 seen_row_keys[rk] = d
 
-    # Sort row keys by their parameter values
-    def _sort_key(rk):
-        d = dict(rk)
-        return tuple(str(d.get(k, '')) for k in _PARAM_ORDER)
-
-    row_keys = sorted(seen_row_keys.keys(), key=_sort_key)
-
+    row_keys   = sorted(seen_row_keys.keys())
     col_labels = [_col_label(family, inst_num) for inst_num, _ in instances]
+    row_labels = {rk: dir_to_label[seen_row_keys[rk]] for rk in row_keys}
 
-    # Build label maps
-    row_labels = {rk: _row_label(rk, row_params) for rk in row_keys}
-
-    # Load cell data
     conv_cells = {rk: {} for rk in row_keys}
-    ci_cells = {rk: {} for rk in row_keys}
+    ci_cells   = {rk: {} for rk in row_keys}
 
     for inst_num, exp_name in instances:
-        col = _col_label(family, inst_num)
+        col     = _col_label(family, inst_num)
         exp_dir = os.path.join(EXPERIMENTS_OUTPUT_DIR, exp_name)
-        # Build a lookup: row_key -> model_trainer_dir for this instance
-        rk_to_dir = {}
-        for d in exp_to_dirs[exp_name]:
-            rk = _row_key(d, row_params)
-            rk_to_dir[rk] = d
+        rk_to_dir = {_row_key(d, row_params): d for d in exp_to_dirs[exp_name]}
 
         for rk in row_keys:
             if rk not in rk_to_dir:
                 conv_cells[rk][col] = r'\textemdash'
-                ci_cells[rk][col] = r'\textemdash'
+                ci_cells[rk][col]   = r'\textemdash'
                 continue
-            mt_path = os.path.join(exp_dir, rk_to_dir[rk])
+            mt_path      = os.path.join(exp_dir, rk_to_dir[rk])
             seed_results = _load_seed_results(mt_path)
-            n, N = _count_perfect(seed_results)
+            n, N         = _count_perfect(seed_results)
             conv_cells[rk][col] = _convergence_cell(n, N)
-            ci_cells[rk][col] = _ci_cell(seed_results)
+            ci_cells[rk][col]   = _ci_cell(seed_results)
 
     family_title = family.capitalize()
 
     conv_table = _render_table(
         family, col_labels, row_keys, row_labels, conv_cells,
-        caption=f'Convergence to perfect accuracy on {family_title} datasets. '
-                r'\checkmark: all seeds converged; $n/N$: only $n$ out of $N$ seeds converged.',
+        caption=(f'Convergence to perfect accuracy on {family_title} datasets. '
+                 r'\checkmark: all seeds converged; $n/N$: only $n$ out of $N$ seeds converged.'),
         label=f'tab:{family}_convergence',
     )
     ci_table = _render_table(
         family, col_labels, row_keys, row_labels, ci_cells,
-        caption=f'Bootstrap confidence intervals for convergence probability on '
-                f'{family_title} datasets (confidence level: {config.get("ci_confidence")}).',
+        caption=(f'Bootstrap confidence intervals ({config.get("ci_confidence")} level) '
+                 f'for convergence probability on {family_title} datasets. '
+                 r'Cells show mean $\pm$ margin.'),
         label=f'tab:{family}_ci',
     )
     return conv_table, ci_table
 
 
+_MACROS_CONTENT = r"""% Macro definitions for benchmark tables.
+% Add \input{macros} to your LaTeX preamble.
+\usepackage{pifont}
+\newcommand{\cmark}{\ding{51}}
+\newcommand{\xmark}{\ding{55}}
+"""
+
+
+def _write_macros(tables_dir):
+    path = os.path.join(tables_dir, 'macros.tex')
+    Path(path).write_text(_MACROS_CONTENT, encoding='utf-8')
+    print(f'  Written: {path}')
+
+
 def run():
     os.makedirs(TABLES_DIR, exist_ok=True)
+    _write_macros(TABLES_DIR)
     families = _scan_families()
 
     if not families:
         print(f'No experiment results found in {EXPERIMENTS_OUTPUT_DIR}')
         return
 
+    # Pre-scan all experiment directories
+    all_dir_names = []
+    family_data   = {}
     for family, instances in families.items():
+        exp_to_dirs = {}
+        for inst_num, exp_name in instances:
+            exp_dir  = os.path.join(EXPERIMENTS_OUTPUT_DIR, exp_name)
+            dirs     = _list_model_trainer_dirs(exp_dir)
+            exp_to_dirs[exp_name] = dirs
+            all_dir_names.extend(dirs)
+        family_data[family] = (instances, exp_to_dirs)
+
+    dir_to_label, label_to_full = _build_name_registry(all_dir_names)
+
+    legend_path = os.path.join(TABLES_DIR, 'legend.tex')
+    Path(legend_path).write_text(_render_legend_table(label_to_full) + '\n', encoding='utf-8')
+    print(f'  Written: {legend_path}')
+
+    for family, (instances, exp_to_dirs) in family_data.items():
         print(f'\n# Family: {family}  ({len(instances)} dataset instances)')
-        conv_table, ci_table = _build_family_tables(family, instances)
+        conv_table, ci_table = _build_family_tables(family, instances, exp_to_dirs, dir_to_label)
 
         conv_path = os.path.join(TABLES_DIR, f'{family}_convergence.tex')
-        ci_path = os.path.join(TABLES_DIR, f'{family}_ci.tex')
+        ci_path   = os.path.join(TABLES_DIR, f'{family}_ci.tex')
 
         Path(conv_path).write_text(conv_table + '\n', encoding='utf-8')
         Path(ci_path).write_text(ci_table + '\n', encoding='utf-8')

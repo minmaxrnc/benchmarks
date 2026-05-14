@@ -30,6 +30,7 @@
 # Fully parameterised: d_model, n_layers, d_state
 'minmaxrnc__d_{D:int}__l_{L:int}__s_{S:int}':
   class: MinMaxRNC_LM
+  pretty_name: MinMax
   args:
     n_layers: '{L}'
     d_model: '{D}'
@@ -38,6 +39,7 @@
 # Four architectural variants: output_gate ∈ {True, False} × conv_type ∈ {'basic', 'gated'}
 'minmaxrnc__d_{D:int}__l_{L:int}__s_{S:int}__og_true__cv_basic':
   class: MinMaxRNC_LM
+  pretty_name: MinMax
   args:
     n_layers: '{L}'
     d_model: '{D}'
@@ -47,6 +49,7 @@
 
 'minmaxrnc__d_{D:int}__l_{L:int}__s_{S:int}__og_true__cv_gated':
   class: MinMaxRNC_LM
+  pretty_name: MinMax
   args:
     n_layers: '{L}'
     d_model: '{D}'
@@ -56,6 +59,7 @@
 
 'minmaxrnc__d_{D:int}__l_{L:int}__s_{S:int}__og_false__cv_basic':
   class: MinMaxRNC_LM
+  pretty_name: MinMax
   args:
     n_layers: '{L}'
     d_model: '{D}'
@@ -65,6 +69,7 @@
 
 'minmaxrnc__d_{D:int}__l_{L:int}__s_{S:int}__og_false__cv_gated':
   class: MinMaxRNC_LM
+  pretty_name: MinMax
   args:
     n_layers: '{L}'
     d_model: '{D}'
@@ -75,6 +80,7 @@
 # Named presets (d_model / d_state fixed, n_layers is free)
 'minmaxrnc_small__l_{L:int}':
   class: MinMaxRNC_LM
+  pretty_name: MinMax-S
   args:
     n_layers: '{L}'
     d_model: 90
@@ -82,6 +88,7 @@
 
 'minmaxrnc_medium__l_{L:int}':
   class: MinMaxRNC_LM
+  pretty_name: MinMax-M
   args:
     n_layers: '{L}'
     d_model: 512
@@ -89,6 +96,7 @@
 
 'minmaxrnc_large__l_{L:int}':
   class: MinMaxRNC_LM
+  pretty_name: MinMax-L
   args:
     n_layers: '{L}'
     d_model: 728
@@ -100,6 +108,7 @@
 
 'vanilla_rnn__d_{D:int}__l_{L:int}':
   class: VanillaRNN
+  pretty_name: VanillaRNN
   args:
     d_model: '{D}'
     n_layers: '{L}'
