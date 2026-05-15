@@ -123,6 +123,32 @@ python main.py evaluate
 python main.py ls
 ```
 
+### Selecting a subset at runtime
+
+By default `train` and `evaluate` run every entry that has `enabled: true` in the corresponding meta file. To override this without editing the meta files, create a `config/run.yaml` file at the project root:
+
+```yaml
+experiments:
+  - latching_(1)
+  - latching_(3)
+  - inductionheads_(0)
+
+evaluations:
+  - latching_(1)
+  - inductionheads_(0)
+```
+
+Each list contains the exact experiment or evaluation names as they appear in `meta/meta.experiments.yaml` / `meta/meta.evaluations.yaml`. When a key is present the corresponding `enabled` flags in the meta files are ignored — only the listed names are run. When a key is absent the meta's `enabled` flags are used as normal. You may include only `experiments`, only `evaluations`, or both.
+
+The `config/` directory is listed in `.gitignore` so the file is treated as a local runtime override and never committed.
+
+A custom path can be passed directly on the command line with `--config` / `-c`:
+
+```bash
+python main.py train --config path/to/my_run.yaml
+python main.py evaluate -c path/to/my_run.yaml
+```
+
 ### Outputs
 
 #### `generate`
@@ -217,6 +243,8 @@ Global runtime settings live in `meta/meta.config.yaml`:
 
 ```
 main.py                      Entry point
+config/                      Runtime overrides (git-ignored)
+  run.yaml                   Optional subset of experiments / evaluations to run
 models/                      Model plugins (auto-discovered at startup)
   vanilla_rnn/               Example: plain RNN baseline
   minmax_rnc/                MinMax RNC wrapper
