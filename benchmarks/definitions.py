@@ -20,6 +20,8 @@ META_DATE_FORMAT    = 'dd/mm/yyyy'
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
+RUNTIME_CONFIG_PATH = PROJECT_ROOT / 'config' / 'run.yaml'
+
 DATA_DIR = os.environ.get("DATA_DIR", ".")
 
 OUTPUT_DIR = os.path.join(

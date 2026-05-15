@@ -2,6 +2,9 @@
 datasets/
 outputs/
 
+# Runtime config
+config/
+
 # Python
 __pycache__/
 *.py[cod]

@@ -8,20 +8,33 @@
 # at your option any later version.
 
 import sys
+import argparse
 from datetime import datetime
 
 from ..utils import meta
+from ..utils import runtime_config
 from ..experiments.experiments import experiments
 
 from ..definitions import EXPERIMENTS_OUTPUT_DIR as OUTPUT_DIR
 
 from ..utils.device import device
 
-META = meta.load('experiments', only_enabled=True)
 
+def run(*args):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', '-c', default=None, metavar='PATH',
+                        help='path to runtime config YAML (default: config/run.yaml)')
+    parsed = parser.parse_args(args)
 
-def run():
-    for experiment_name, experiment_entry in META.items():
+    cfg = runtime_config.load(parsed.config)
+    if cfg is not None and 'experiments' in cfg:
+        META = meta.load('experiments')
+        names = cfg['experiments']
+    else:
+        META = meta.load('experiments', only_enabled=True)
+        names = list(META.keys())
+
+    for experiment_name in names:
         print(f"\n# Experiment: {experiments.str(experiment_name)}\n")
         print(f"Device: {device}")
         experiment = experiments.instantiate(experiment_name)
