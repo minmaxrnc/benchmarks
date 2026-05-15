@@ -17,31 +17,31 @@ latching_(3):
   enabled: true
   from_template: true
 latching_(4):
-  enabled: true
+  enabled: false
   from_template: true
 latching_(5):
-  enabled: true
+  enabled: false
   from_template: true
 latching_(6):
-  enabled: true
+  enabled: false
   from_template: true
 latching_(7):
-  enabled: true
+  enabled: false
   from_template: true
 latching_(8):
   enabled: true
   from_template: true
 sequences_(1):
-  enabled: true
+  enabled: false
   from_template: true
 sequences_(2):
-  enabled: true
+  enabled: false
   from_template: true
 sequences_(3):
-  enabled: true
+  enabled: false
   from_template: true
 sequences_(4):
-  enabled: true
+  enabled: false
   from_template: true
 sequences_(5):
   enabled: true
