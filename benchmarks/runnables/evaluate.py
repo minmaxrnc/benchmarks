@@ -22,13 +22,15 @@ from ..definitions import EVALUATIONS_OUTPUT_DIR
 from ..utils.device import device
 
 
-def run(*args):
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--config', '-c', default=None, metavar='PATH',
-                        help='path to runtime config YAML (default: config/run.yaml)')
-    parsed = parser.parse_args(args)
-
-    cfg = runtime_config.load(parsed.config)
+def run(*args, config=None):
+    if config is not None:
+        cfg = config
+    else:
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--config', '-c', default=None, metavar='PATH',
+                            help='path to runtime config YAML (default: config/run.yaml)')
+        parsed = parser.parse_args(args)
+        cfg = runtime_config.load(parsed.config)
     if cfg is not None and 'evaluations' in cfg:
         META = meta.load('evaluations')
         names = cfg['evaluations']

@@ -149,6 +149,22 @@ python main.py train --config path/to/my_run.yaml
 python main.py evaluate -c path/to/my_run.yaml
 ```
 
+When calling the runnables programmatically you can pass a dictionary instead of a file via the `config` keyword argument:
+
+```python
+from benchmarks.runnables import train, evaluate
+
+train.run(config={
+    'experiments': ['latching_(1)', 'inductionheads_(0)'],
+})
+
+evaluate.run(config={
+    'evaluations': ['latching_(1)'],
+})
+```
+
+The `config` keyword argument takes priority over any CLI `--config` path and over the default `config/run.yaml` file.
+
 ### Outputs
 
 #### `generate`
