@@ -122,6 +122,30 @@
     conv_type: gated
     s_r_init: kaiming
 
+# train_init=True variants (learned x_0)
+'minmaxrnc__d_{D:int}__l_{L:int}__s_{S:int}__og_true__cv_basic__ti_true':
+  class: MinMaxRNC_LM
+  pretty_name: MinMax (TrainInit)
+  args:
+    n_layers: '{L}'
+    d_model: '{D}'
+    d_state: '{S}'
+    output_gate: true
+    conv_type: basic
+    train_init: true
+
+'minmaxrnc__d_{D:int}__l_{L:int}__s_{S:int}__og_true__cv_basic__sri_kaiming__ti_true':
+  class: MinMaxRNC_LM
+  pretty_name: MinMax (Kaiming s/r, TrainInit)
+  args:
+    n_layers: '{L}'
+    d_model: '{D}'
+    d_state: '{S}'
+    output_gate: true
+    conv_type: basic
+    s_r_init: kaiming
+    train_init: true
+
 # Named presets (d_model / d_state fixed, n_layers is free)
 'minmaxrnc_small__l_{L:int}':
   class: MinMaxRNC_LM
