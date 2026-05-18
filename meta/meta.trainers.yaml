@@ -16,3 +16,12 @@ trainer_default:
     lr: 0.001
     train_batch_size: 64
 
+trainer_warmup:
+  class: Trainer
+  pretty_name: Warmup
+  args:
+    optimizer: adam
+    scheduler: step_warmup
+    lr: 0.001
+    train_batch_size: 64
+

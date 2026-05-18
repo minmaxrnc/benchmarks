@@ -64,7 +64,7 @@ def _parse_params(dirname):
 
     params = {}
     for part in model_part.split('__'):
-        for prefix in ('og_', 'cv_', 's_', 'l_', 'd_'):
+        for prefix in ('og_', 'cv_', 's_', 'l_', 'd_', 'sri_'):
             if part.startswith(prefix):
                 key = prefix.rstrip('_')
                 raw = part[len(prefix):]
@@ -80,10 +80,12 @@ def _find_row_params(exp_to_dirs):
     """Return parameter names that vary within at least one experiment."""
     within_varying = set()
     for dirs in exp_to_dirs.values():
+        all_keys = set(k for d in dirs for k in _parse_params(d))
         param_vals = defaultdict(set)
         for d in dirs:
-            for k, v in _parse_params(d).items():
-                param_vals[k].add(v)
+            p = _parse_params(d)
+            for k in all_keys:
+                param_vals[k].add(p.get(k, ''))  # '' when param is absent
         for k, vals in param_vals.items():
             if len(vals) > 1:
                 within_varying.add(k)
@@ -93,7 +95,7 @@ def _find_row_params(exp_to_dirs):
 def _row_key(dirname, row_params):
     """Hashable row identifier: only the within-varying params."""
     p = _parse_params(dirname)
-    return tuple(sorted((k, p[k]) for k in row_params if k in p))
+    return tuple(sorted((k, p.get(k, '')) for k in row_params))
 
 
 # ---------------------------------------------------------------------------

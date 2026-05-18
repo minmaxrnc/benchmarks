@@ -13,6 +13,7 @@ import torch.nn as nn
 from benchmarks.optimizers.adam import Adam
 from benchmarks.schedulers.nonescheduler import NoneScheduler
 from benchmarks.schedulers.stepscheduler import StepLR
+from benchmarks.schedulers.warmupstepscheduler import WarmupStepLR
 
 pytestmark = pytest.mark.group('schedulers')
 
@@ -74,3 +75,69 @@ class TestStepLR:
 
     def test_step_property_is_epoch(self):
         assert StepLR.get_properties()['step'] == 'epoch'
+
+
+class TestWarmupStepLR:
+
+    # epochs=20, warmup_fraction=0.2 → warmup_steps=4
+    # At last_epoch=0 (init): scale = 1/4, LR = 0.025
+    # At last_epoch=3 (after 3 steps): scale = 4/4 = 1.0, LR = 0.1
+    # Then StepLR with step_size=2, gamma=0.5 counting from end of warmup.
+
+    def test_instantiation(self, optimizer):
+        sched = WarmupStepLR('step_warmup', optimizer=optimizer, epochs=20,
+                             step_size=2, gamma=0.5, warmup_fraction=0.2)
+        assert sched.name == 'step_warmup'
+
+    def test_lr_starts_below_base(self, optimizer):
+        initial_lr = optimizer.param_groups[0]['lr']
+        WarmupStepLR('step_warmup', optimizer=optimizer, epochs=20,
+                     step_size=2, gamma=0.5, warmup_fraction=0.2)
+        assert optimizer.param_groups[0]['lr'] == pytest.approx(initial_lr * 0.25)
+
+    def test_lr_ramps_linearly_during_warmup(self, optimizer):
+        initial_lr = optimizer.param_groups[0]['lr']
+        sched = WarmupStepLR('step_warmup', optimizer=optimizer, epochs=20,
+                             step_size=2, gamma=0.5, warmup_fraction=0.2)
+        sched.step()   # last_epoch=1 → scale=2/4
+        assert optimizer.param_groups[0]['lr'] == pytest.approx(initial_lr * 0.5)
+        sched.step()   # last_epoch=2 → scale=3/4
+        assert optimizer.param_groups[0]['lr'] == pytest.approx(initial_lr * 0.75)
+
+    def test_lr_reaches_full_at_end_of_warmup(self, optimizer):
+        initial_lr = optimizer.param_groups[0]['lr']
+        sched = WarmupStepLR('step_warmup', optimizer=optimizer, epochs=20,
+                             step_size=2, gamma=0.5, warmup_fraction=0.2)
+        for _ in range(3):   # last_epoch reaches 3 = warmup_steps - 1
+            sched.step()
+        assert optimizer.param_groups[0]['lr'] == pytest.approx(initial_lr)
+
+    def test_no_decay_immediately_after_warmup(self, optimizer):
+        initial_lr = optimizer.param_groups[0]['lr']
+        sched = WarmupStepLR('step_warmup', optimizer=optimizer, epochs=20,
+                             step_size=2, gamma=0.5, warmup_fraction=0.2)
+        for _ in range(4):   # last_epoch=4: post_warmup=0, scale=0.5^0=1
+            sched.step()
+        assert optimizer.param_groups[0]['lr'] == pytest.approx(initial_lr)
+
+    def test_decay_after_step_size_post_warmup(self, optimizer):
+        initial_lr = optimizer.param_groups[0]['lr']
+        sched = WarmupStepLR('step_warmup', optimizer=optimizer, epochs=20,
+                             step_size=2, gamma=0.5, warmup_fraction=0.2)
+        for _ in range(6):   # last_epoch=6: post_warmup=2, scale=0.5^1
+            sched.step()
+        assert optimizer.param_groups[0]['lr'] == pytest.approx(initial_lr * 0.5)
+
+    def test_second_decay(self, optimizer):
+        initial_lr = optimizer.param_groups[0]['lr']
+        sched = WarmupStepLR('step_warmup', optimizer=optimizer, epochs=20,
+                             step_size=2, gamma=0.5, warmup_fraction=0.2)
+        for _ in range(8):   # last_epoch=8: post_warmup=4, scale=0.5^2
+            sched.step()
+        assert optimizer.param_groups[0]['lr'] == pytest.approx(initial_lr * 0.25)
+
+    def test_step_property_is_epoch(self):
+        assert WarmupStepLR.get_properties()['step'] == 'epoch'
+
+    def test_required_kwargs_includes_epochs(self):
+        assert 'epochs' in WarmupStepLR.get_required_kwargs()

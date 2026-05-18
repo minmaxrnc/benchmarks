@@ -12,6 +12,7 @@ from ..utils.singleton import SingletonMeta
 
 from .nonescheduler import NoneScheduler
 from .stepscheduler import StepLR
+from .warmupstepscheduler import WarmupStepLR
 
 class Schedulers(Factory, metaclass=SingletonMeta):
     pass
@@ -19,5 +20,6 @@ class Schedulers(Factory, metaclass=SingletonMeta):
 schedulers = Schedulers(__name__, classes=[
     NoneScheduler,
     StepLR,
+    WarmupStepLR,
 ])
 

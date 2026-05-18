@@ -17,3 +17,10 @@ step:
   args:
     step_size: 5
     gamma: 0.5
+step_warmup:
+  class: WarmupStepLR
+  pretty_name: Step + Warmup
+  args:
+    step_size: 5
+    gamma: 0.5
+    warmup_fraction: 0.1
