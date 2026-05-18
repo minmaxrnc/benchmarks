@@ -22,6 +22,6 @@ trainer_warmup:
   args:
     optimizer: adam
     scheduler: step_warmup
-    lr: 0.001
+    lr: 0.0005
     train_batch_size: 64
 
