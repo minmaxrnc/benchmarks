@@ -114,6 +114,32 @@ def _load_seed_results(mt_path):
     return results
 
 
+def _load_oscillation_data(mt_path):
+    """Return list of (converged, max_drop) per seed CSV.
+
+    max_drop is the largest drop below 1.0 observed after the first epoch that
+    reached perfect accuracy.  It is 0.0 for seeds that never dip back below 1.0
+    (or that converged on the very last epoch).  Seeds that never converged are
+    included as (False, 0.0) so callers can compute the correct denominator.
+    """
+    pattern = os.path.join(mt_path, 'train_log__*__seed_*.csv')
+    results = []
+    for csv_file in sorted(glob.glob(pattern)):
+        with open(csv_file, newline='') as f:
+            rows = list(csv.DictReader(f))
+        if not rows:
+            continue
+        accs = [float(r['val_acc']) for r in rows]
+        first_conv = next((i for i, a in enumerate(accs) if a >= 1.0), None)
+        if first_conv is None:
+            results.append((False, 0.0))
+        else:
+            after = accs[first_conv + 1:]
+            max_drop = max(0.0, 1.0 - min(after)) if after else 0.0
+            results.append((True, max_drop))
+    return results
+
+
 # ---------------------------------------------------------------------------
 # Statistics
 # ---------------------------------------------------------------------------
@@ -245,6 +271,31 @@ def _result_cell(seed_results):
     return f'${n}/{N}\\ [{lo:.2f},\\,{hi:.2f}]$'
 
 
+_OSC_EPS = 1e-9
+
+
+def _oscillation_freq_cell(osc_data):
+    """n_osc/n_conv [Wilson CI] for seeds that dipped below 1.0 after converging."""
+    n_conv = sum(1 for conv, _ in osc_data if conv)
+    if n_conv == 0:
+        return r'\textemdash'
+    n_osc  = sum(1 for conv, drop in osc_data if conv and drop > _OSC_EPS)
+    lo, hi = _wilson_ci(n_osc, n_conv)
+    return f'${n_osc}/{n_conv}\\ [{lo:.2f},\\,{hi:.2f}]$'
+
+
+def _oscillation_magnitude_cell(osc_data):
+    """Mean ± s.d. of the max drop below 1.0 after first convergence, over converged seeds."""
+    drops = [drop for conv, drop in osc_data if conv]
+    if not drops:
+        return r'\textemdash'
+    mean = sum(drops) / len(drops)
+    if len(drops) >= 2:
+        std = math.sqrt(sum((d - mean) ** 2 for d in drops) / (len(drops) - 1))
+        return f'${mean:.3f} \\pm {std:.3f}$'
+    return f'${mean:.3f}$'
+
+
 # ---------------------------------------------------------------------------
 # Column label
 # ---------------------------------------------------------------------------
@@ -343,6 +394,58 @@ def _build_family_table(family, instances, exp_to_dirs, dir_to_label):
     )
 
 
+def _build_family_oscillation_tables(family, instances, exp_to_dirs, dir_to_label):
+    row_params = _find_row_params(exp_to_dirs)
+
+    seen_row_keys = {}
+    for inst_num, exp_name in instances:
+        for d in exp_to_dirs[exp_name]:
+            rk = _row_key(d, row_params)
+            if rk not in seen_row_keys:
+                seen_row_keys[rk] = d
+
+    row_keys   = sorted(seen_row_keys.keys())
+    col_labels = [_col_label(family, inst_num) for inst_num, _ in instances]
+    row_labels = {rk: dir_to_label[seen_row_keys[rk]] for rk in row_keys}
+
+    freq_cells = {rk: {} for rk in row_keys}
+    mag_cells  = {rk: {} for rk in row_keys}
+
+    for inst_num, exp_name in instances:
+        col       = _col_label(family, inst_num)
+        exp_dir   = os.path.join(EXPERIMENTS_OUTPUT_DIR, exp_name)
+        rk_to_dir = {_row_key(d, row_params): d for d in exp_to_dirs[exp_name]}
+
+        for rk in row_keys:
+            if rk not in rk_to_dir:
+                freq_cells[rk][col] = r'\textemdash'
+                mag_cells[rk][col]  = r'\textemdash'
+                continue
+            mt_path  = os.path.join(exp_dir, rk_to_dir[rk])
+            osc_data = _load_oscillation_data(mt_path)
+            freq_cells[rk][col] = _oscillation_freq_cell(osc_data)
+            mag_cells[rk][col]  = _oscillation_magnitude_cell(osc_data)
+
+    family_title = family.capitalize()
+
+    freq_table = _render_table(
+        family, col_labels, row_keys, row_labels, freq_cells,
+        caption=(f'Oscillation after first convergence on {family_title} datasets. '
+                 r'Cells show $n_{\mathrm{osc}}/n_{\mathrm{conv}}$ (seeds that dipped '
+                 r'below perfect accuracy after first converging / seeds that converged) '
+                 r'followed by the Wilson 95\% CI.'),
+        label=f'tab:{family}_oscillation',
+    )
+    mag_table = _render_table(
+        family, col_labels, row_keys, row_labels, mag_cells,
+        caption=(f'Magnitude of oscillation after first convergence on {family_title} datasets. '
+                 r'Cells show mean\,$\pm$\,s.d.\ of the maximum drop in validation accuracy '
+                 r'below 1.0 after first convergence, averaged over converged seeds.'),
+        label=f'tab:{family}_oscillation_magnitude',
+    )
+    return freq_table, mag_table
+
+
 _MACROS_CONTENT = r"""% Macro definitions for benchmark tables.
 % Add \input{macros} to your LaTeX preamble.
 \usepackage{pifont}
@@ -386,8 +489,15 @@ def run():
 
     for family, (instances, exp_to_dirs) in family_data.items():
         print(f'\n# Family: {family}  ({len(instances)} dataset instances)')
-        table = _build_family_table(family, instances, exp_to_dirs, dir_to_label)
 
-        path = os.path.join(TABLES_DIR, f'{family}.tex')
-        Path(path).write_text(table + '\n', encoding='utf-8')
-        print(f'  Written: {path}')
+        conv_table              = _build_family_table(family, instances, exp_to_dirs, dir_to_label)
+        freq_table, mag_table   = _build_family_oscillation_tables(family, instances, exp_to_dirs, dir_to_label)
+
+        for fname, content in [
+            (f'{family}.tex',                        conv_table),
+            (f'{family}_oscillation.tex',            freq_table),
+            (f'{family}_oscillation_magnitude.tex',  mag_table),
+        ]:
+            path = os.path.join(TABLES_DIR, fname)
+            Path(path).write_text(content + '\n', encoding='utf-8')
+            print(f'  Written: {path}')

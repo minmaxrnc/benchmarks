@@ -469,15 +469,15 @@ class Trainer:
                         )
                         tqdm.write(new_best_msg)
 
+                    # LR of each param group (before step, so it reflects what this epoch trained with)
+                    cur_lr = [float(g['lr']) for g in optimizer.param_groups]
+
                     # ---- Scheduler step ----
                     if schedulers.get_property(scheduler, 'step') == 'plateau':
                         target = val_loss
                         scheduler.step(target)  # type: ignore[attr-defined]
                     elif schedulers.get_property(scheduler, 'step') == 'epoch':
                         scheduler.step()
-
-                    # LR of each param group
-                    cur_lr = [float(g['lr']) for g in optimizer.param_groups]
 
                     history.append({
                         'epoch':      epoch,

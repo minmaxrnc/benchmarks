@@ -23,4 +23,4 @@ step_warmup:
   args:
     step_size: 5
     gamma: 0.5
-    warmup_fraction: 0.1
+    warmup_fraction: 0.3
