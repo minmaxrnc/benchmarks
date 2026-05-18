@@ -122,6 +122,18 @@
     conv_type: gated
     s_r_init: kaiming
 
+# Asymmetric init variants (s: Kaiming + positive bias; r: small_init + zero bias)
+'minmaxrnc__d_{D:int}__l_{L:int}__s_{S:int}__og_true__cv_basic__sri_asymmetric':
+  class: MinMaxRNC_LM
+  pretty_name: MinMax (Asymmetric init)
+  args:
+    n_layers: '{L}'
+    d_model: '{D}'
+    d_state: '{S}'
+    output_gate: true
+    conv_type: basic
+    s_r_init: asymmetric
+
 # train_init=True variants (learned x_0)
 'minmaxrnc__d_{D:int}__l_{L:int}__s_{S:int}__og_true__cv_basic__ti_true':
   class: MinMaxRNC_LM

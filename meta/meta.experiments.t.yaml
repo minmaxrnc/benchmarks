@@ -93,11 +93,7 @@
         trainer: trainer_default
       - model: minmaxrnc__d_(90)__l_(2)__s_(90)__og_false__cv_gated__sri_kaiming
         trainer: trainer_default
-      - model: minmaxrnc__d_(90)__l_(2)__s_(40)__og_true__cv_basic__ti_true
+      - model: minmaxrnc__d_(90)__l_(2)__s_(40)__og_true__cv_basic__sri_asymmetric
         trainer: trainer_default
-      - model: minmaxrnc__d_(90)__l_(2)__s_(90)__og_true__cv_basic__ti_true
-        trainer: trainer_default
-      - model: minmaxrnc__d_(90)__l_(2)__s_(40)__og_true__cv_basic__sri_kaiming__ti_true
-        trainer: trainer_default
-      - model: minmaxrnc__d_(90)__l_(2)__s_(90)__og_true__cv_basic__sri_kaiming__ti_true
+      - model: minmaxrnc__d_(90)__l_(2)__s_(90)__og_true__cv_basic__sri_asymmetric
         trainer: trainer_default
