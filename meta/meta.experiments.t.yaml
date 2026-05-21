@@ -33,6 +33,8 @@
         trainer: trainer_default
       - model: minmaxrnc__d_(90)__l_(2)__s_(40)__og_false__cv_gated
         trainer: trainer_default
+      - model: minmaxrnc__d_(90)__l_(2)__s_(40)__og_true__cv_basic__sri_asymmetric
+        trainer: trainer_default
 
 'sequences_{N:int}':
   class: Experiment
@@ -50,6 +52,8 @@
       - model: minmaxrnc__d_(90)__l_({N}+1)__s_(40)__og_false__cv_basic
         trainer: trainer_default
       - model: minmaxrnc__d_(90)__l_({N}+1)__s_(40)__og_false__cv_gated
+        trainer: trainer_default
+      - model: minmaxrnc__d_(90)__l_({N}+1)__s_(40)__og_true__cv_basic__sri_asymmetric
         trainer: trainer_default
 
 'inductionheads_{N:int}':
