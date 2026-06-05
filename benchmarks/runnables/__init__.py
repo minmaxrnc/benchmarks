@@ -11,5 +11,4 @@ __all__ = [
         'generate',
         'train',
         'evaluate',
-        'latex_tables',
         ]

@@ -39,6 +39,9 @@ class MinMaxRNC_LM(Model):
         tie_weights:          bool  = True,
         default_unroll_steps: int   = 64,
         s_r_init:             str   = 'small_init',
+        output_gate:          bool  = True,
+        conv_type:            str   = 'basic',
+        ffn_dropout:          float = 0.1,
         **backbone_kwargs,
     ):
         super().__init__(name)
@@ -55,6 +58,9 @@ class MinMaxRNC_LM(Model):
             backbone     = self._backbone_cfg,
             head_dropout = head_dropout,
             tie_weights  = tie_weights,
+            output_gate  = output_gate,
+            conv_type    = conv_type,
+            ffn_dropout  = ffn_dropout,
         )
         self._lm = _MinMaxRNC_LM(vocab_size=iosize, cfg=self._lm_cfg)
 
