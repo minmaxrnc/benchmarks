@@ -7,6 +7,7 @@
 # the Free Software Foundation, either version 3 of the License, or
 # at your option any later version.
 
+import json
 import math
 import os
 import csv
@@ -16,7 +17,7 @@ import yaml
 from collections import defaultdict
 from pathlib import Path
 
-from ..definitions import EXPERIMENTS_OUTPUT_DIR, OUTPUT_DIR, PROJECT_ROOT
+from ..definitions import EXPERIMENTS_OUTPUT_DIR, EVALUATIONS_OUTPUT_DIR, OUTPUT_DIR, PROJECT_ROOT
 
 TABLES_DIR = os.path.join(OUTPUT_DIR, 'tables')
 
@@ -25,13 +26,13 @@ TABLES_DIR = os.path.join(OUTPUT_DIR, 'tables')
 # Filesystem helpers
 # ---------------------------------------------------------------------------
 
-def _scan_families():
-    """Return {family: sorted [(instance_num, exp_dir_name), ...]}."""
+def _scan_families(root_dir):
+    """Return {family: sorted [(instance_num, dir_name), ...]} under root_dir."""
     families = defaultdict(list)
-    if not os.path.isdir(EXPERIMENTS_OUTPUT_DIR):
+    if not os.path.isdir(root_dir):
         return {}
-    for entry in sorted(os.listdir(EXPERIMENTS_OUTPUT_DIR)):
-        if not os.path.isdir(os.path.join(EXPERIMENTS_OUTPUT_DIR, entry)):
+    for entry in sorted(os.listdir(root_dir)):
+        if not os.path.isdir(os.path.join(root_dir, entry)):
             continue
         idx = entry.rfind('_')
         if idx == -1:
@@ -48,6 +49,17 @@ def _list_model_trainer_dirs(exp_dir):
     for entry in sorted(os.listdir(exp_dir)):
         if os.path.isdir(os.path.join(exp_dir, entry)) and entry.endswith('__trainer_default'):
             result.append(entry)
+    return result
+
+
+def _list_eval_model_trainer_dirs(eval_dir):
+    """Return sorted model-trainer directory names inside an evaluation dir (completed only)."""
+    result = []
+    for entry in sorted(os.listdir(eval_dir)):
+        path = os.path.join(eval_dir, entry)
+        if os.path.isdir(path) and entry.endswith('__trainer_default'):
+            if os.path.exists(os.path.join(path, 'completed.txt')):
+                result.append(entry)
     return result
 
 
@@ -145,6 +157,32 @@ def _load_oscillation_data(mt_path):
                 prev = a
             results.append((True, max_drop, n_dips))
     return results
+
+
+# ---------------------------------------------------------------------------
+# Evaluation data loading
+# ---------------------------------------------------------------------------
+
+def _load_eval_summary(mt_path):
+    """Return (acc_cum, acc_min) dicts with mean/low/high, or None if missing."""
+    path = os.path.join(mt_path, 'eval_summary.json')
+    if not os.path.exists(path):
+        return None
+    with open(path) as f:
+        s = json.load(f)
+    return s.get('acc_cum'), s.get('acc_min')
+
+
+def _eval_cell(metric_dict):
+    """Format a metric dict {mean, low, high} as $mean [low, high]$ (2 d.p.)."""
+    if metric_dict is None:
+        return r'\textemdash'
+    mean = metric_dict.get('mean')
+    low  = metric_dict.get('low')
+    high = metric_dict.get('high')
+    if mean is None or (isinstance(mean, float) and math.isnan(mean)):
+        return r'\textemdash'
+    return f'${mean:.2f}\\ [{low:.2f},\\,{high:.2f}]$'
 
 
 # ---------------------------------------------------------------------------
@@ -475,6 +513,62 @@ def _build_family_oscillation_tables(family, instances, exp_to_dirs, dir_to_labe
     return freq_table, mag_table, count_table
 
 
+def _build_eval_family_tables(family, instances, eval_to_dirs, dir_to_label):
+    row_params = _find_row_params(eval_to_dirs)
+
+    seen_row_keys = {}
+    for inst_num, eval_name in instances:
+        for d in eval_to_dirs[eval_name]:
+            rk = _row_key(d, row_params)
+            if rk not in seen_row_keys:
+                seen_row_keys[rk] = d
+
+    row_keys   = sorted(seen_row_keys.keys())
+    col_labels = [_col_label(family, inst_num) for inst_num, _ in instances]
+    row_labels = {rk: dir_to_label[seen_row_keys[rk]] for rk in row_keys}
+
+    cum_cells = {rk: {} for rk in row_keys}
+    min_cells = {rk: {} for rk in row_keys}
+
+    for inst_num, eval_name in instances:
+        col      = _col_label(family, inst_num)
+        eval_dir = os.path.join(EVALUATIONS_OUTPUT_DIR, eval_name)
+        rk_to_dir = {_row_key(d, row_params): d for d in eval_to_dirs[eval_name]}
+
+        for rk in row_keys:
+            if rk not in rk_to_dir:
+                cum_cells[rk][col] = r'\textemdash'
+                min_cells[rk][col] = r'\textemdash'
+                continue
+            mt_path          = os.path.join(eval_dir, rk_to_dir[rk])
+            acc_cum, acc_min = _load_eval_summary(mt_path) or (None, None)
+            cum_cells[rk][col] = _eval_cell(acc_cum)
+            min_cells[rk][col] = _eval_cell(acc_min)
+
+    # Drop columns where every row is missing
+    col_labels = [
+        c for c in col_labels
+        if any(cum_cells[rk][c] != r'\textemdash' for rk in row_keys)
+    ]
+
+    family_title = family.capitalize()
+
+    cum_table = _render_table(
+        family, col_labels, row_keys, row_labels, cum_cells,
+        caption=(f'Cumulative accuracy on {family_title} evaluation datasets. '
+                 r'Cells show mean\,[low,\,high] (bootstrap CI across seeds).'),
+        label=f'tab:{family}_eval_cum',
+    )
+    min_table = _render_table(
+        family, col_labels, row_keys, row_labels, min_cells,
+        caption=(f'Minimum per-step accuracy on {family_title} evaluation datasets. '
+                 r'Cells show mean\,[low,\,high] (bootstrap CI across seeds). '
+                 r'\textemdash\ indicates the metric was not defined at some steps.'),
+        label=f'tab:{family}_eval_min',
+    )
+    return cum_table, min_table
+
+
 _MACROS_CONTENT = r"""% Macro definitions for benchmark tables.
 % Add \input{macros} to your LaTeX preamble.
 \usepackage{pifont}
@@ -492,41 +586,78 @@ def _write_macros(tables_dir):
 def run():
     os.makedirs(TABLES_DIR, exist_ok=True)
     _write_macros(TABLES_DIR)
-    families = _scan_families()
 
-    if not families:
+    # ------------------------------------------------------------------ training
+    train_families = _scan_families(EXPERIMENTS_OUTPUT_DIR)
+
+    if not train_families:
         print(f'No experiment results found in {EXPERIMENTS_OUTPUT_DIR}')
+    else:
+        all_dir_names = []
+        family_data   = {}
+        for family, instances in train_families.items():
+            exp_to_dirs = {}
+            for inst_num, exp_name in instances:
+                exp_dir = os.path.join(EXPERIMENTS_OUTPUT_DIR, exp_name)
+                dirs    = _list_model_trainer_dirs(exp_dir)
+                exp_to_dirs[exp_name] = dirs
+                all_dir_names.extend(dirs)
+            family_data[family] = (instances, exp_to_dirs)
+
+        dir_to_label, label_to_full = _build_name_registry(all_dir_names)
+
+        legend_path = os.path.join(TABLES_DIR, 'legend.tex')
+        Path(legend_path).write_text(_render_legend_table(label_to_full) + '\n', encoding='utf-8')
+        print(f'  Written: {legend_path}')
+
+        for family, (instances, exp_to_dirs) in family_data.items():
+            print(f'\n# Training family: {family}  ({len(instances)} instances)')
+
+            conv_table                       = _build_family_table(family, instances, exp_to_dirs, dir_to_label)
+            freq_table, mag_table, cnt_table = _build_family_oscillation_tables(family, instances, exp_to_dirs, dir_to_label)
+
+            for fname, content in [
+                (f'{family}.tex',                        conv_table),
+                (f'{family}_oscillation.tex',            freq_table),
+                (f'{family}_oscillation_magnitude.tex',  mag_table),
+                (f'{family}_oscillation_count.tex',      cnt_table),
+            ]:
+                path = os.path.join(TABLES_DIR, fname)
+                Path(path).write_text(content + '\n', encoding='utf-8')
+                print(f'  Written: {path}')
+
+    # ------------------------------------------------------------------ evaluation
+    eval_families = _scan_families(EVALUATIONS_OUTPUT_DIR)
+
+    if not eval_families:
+        print(f'\nNo evaluation results found in {EVALUATIONS_OUTPUT_DIR}')
         return
 
-    # Pre-scan all experiment directories
-    all_dir_names = []
-    family_data   = {}
-    for family, instances in families.items():
-        exp_to_dirs = {}
-        for inst_num, exp_name in instances:
-            exp_dir  = os.path.join(EXPERIMENTS_OUTPUT_DIR, exp_name)
-            dirs     = _list_model_trainer_dirs(exp_dir)
-            exp_to_dirs[exp_name] = dirs
-            all_dir_names.extend(dirs)
-        family_data[family] = (instances, exp_to_dirs)
+    all_eval_dir_names = []
+    eval_family_data   = {}
+    for family, instances in eval_families.items():
+        eval_to_dirs = {}
+        for inst_num, eval_name in instances:
+            eval_dir = os.path.join(EVALUATIONS_OUTPUT_DIR, eval_name)
+            dirs     = _list_eval_model_trainer_dirs(eval_dir)
+            eval_to_dirs[eval_name] = dirs
+            all_eval_dir_names.extend(dirs)
+        eval_family_data[family] = (instances, eval_to_dirs)
 
-    dir_to_label, label_to_full = _build_name_registry(all_dir_names)
+    eval_dir_to_label, eval_label_to_full = _build_name_registry(all_eval_dir_names)
 
-    legend_path = os.path.join(TABLES_DIR, 'legend.tex')
-    Path(legend_path).write_text(_render_legend_table(label_to_full) + '\n', encoding='utf-8')
-    print(f'  Written: {legend_path}')
+    eval_legend_path = os.path.join(TABLES_DIR, 'eval_legend.tex')
+    Path(eval_legend_path).write_text(_render_legend_table(eval_label_to_full) + '\n', encoding='utf-8')
+    print(f'\n  Written: {eval_legend_path}')
 
-    for family, (instances, exp_to_dirs) in family_data.items():
-        print(f'\n# Family: {family}  ({len(instances)} dataset instances)')
+    for family, (instances, eval_to_dirs) in eval_family_data.items():
+        print(f'\n# Evaluation family: {family}  ({len(instances)} instances)')
 
-        conv_table                       = _build_family_table(family, instances, exp_to_dirs, dir_to_label)
-        freq_table, mag_table, cnt_table = _build_family_oscillation_tables(family, instances, exp_to_dirs, dir_to_label)
+        cum_table, min_table = _build_eval_family_tables(family, instances, eval_to_dirs, eval_dir_to_label)
 
         for fname, content in [
-            (f'{family}.tex',                        conv_table),
-            (f'{family}_oscillation.tex',            freq_table),
-            (f'{family}_oscillation_magnitude.tex',  mag_table),
-            (f'{family}_oscillation_count.tex',      cnt_table),
+            (f'{family}_eval_cum.tex', cum_table),
+            (f'{family}_eval_min.tex', min_table),
         ]:
             path = os.path.join(TABLES_DIR, fname)
             Path(path).write_text(content + '\n', encoding='utf-8')
