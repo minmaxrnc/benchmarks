@@ -29,6 +29,7 @@ from benchmarks.models.model import Model
 from benchmarks.losses.crossentropyloss import CrossEntropyLoss
 from benchmarks.metrics.tokenaccuracy import TokenAccuracy
 from benchmarks.utils import config
+from benchmarks.utils.device import device
 from minmax_rnc.model import MinMaxRNC_LM
 from vanilla_rnn.model import VanillaRNN
 
@@ -283,7 +284,9 @@ class TestRunTrainEpochGradAccum:
 
     def _one_epoch(self, grad_accum_steps, unroll_steps):
         torch.manual_seed(0)
-        model = _tiny_minmax()
+        # The full training loop moves the model to `device` (cuda when available) before the
+        # epochs; _run_train_epoch, called directly here, expects it there already.
+        model = _tiny_minmax().to(device)
         torch.manual_seed(1)
         x = torch.randint(0, 6, (4, 12))
         loader = [{'inputs': x, 'outputs': x.clone(), 'mask': torch.ones(4, 12, dtype=torch.bool)}]
@@ -303,13 +306,13 @@ class TestRunTrainEpochGradAccum:
         acc, loss_acc, _, _ = self._one_epoch(grad_accum_steps=2, unroll_steps=12)
         assert loss_ref == pytest.approx(loss_acc, rel=1e-5)
         for p_ref, p_acc in zip(ref.parameters(), acc.parameters()):
-            assert torch.allclose(p_ref, p_acc, atol=1e-6)
+            assert torch.allclose(p_ref, p_acc, atol=1e-5)  # 1e-5: CUDA reductions differ in order
 
     def test_chunked_training_gives_the_same_update(self):
         ref, _, _, _ = self._one_epoch(grad_accum_steps=1, unroll_steps=12)
         chunked, _, _, _ = self._one_epoch(grad_accum_steps=1, unroll_steps=5)
         for p_ref, p_c in zip(ref.parameters(), chunked.parameters()):
-            assert torch.allclose(p_ref, p_c, atol=1e-6)
+            assert torch.allclose(p_ref, p_c, atol=1e-5)
 
     def test_epoch_stats(self):
         _, _, step, stats = self._one_epoch(grad_accum_steps=2, unroll_steps=5)
