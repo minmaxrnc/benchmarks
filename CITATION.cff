@@ -3,7 +3,7 @@ message: >-
   If you use these benchmarks, please cite the paper below (preferred citation)
   and, if relevant, this software.
 type: software
-title: MinMax RNC Benchmarks
+title: Long-sequence Benchmarks
 authors:
   - family-names: Ronca
     given-names: Alessandro

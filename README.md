@@ -441,7 +441,7 @@ groups:
  ```bibtex
  @software{ronca2026minmaxbenchmarks,
    author  = {Alessandro Ronca},
-   title   = {{MinMax RNC} Benchmarks},
+   title   = {Long-sequence Benchmarks},
    year    = {2026},
    url     = {https://github.com/minmaxrnc/benchmarks},
    version = {0.2.0},
