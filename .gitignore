@@ -1,5 +1,5 @@
-# Generated files
-datasets/
+# Generated files (top-level only: benchmarks/datasets/ is source code)
+/datasets/
 outputs/
 outputs*
 
