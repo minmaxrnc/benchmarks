@@ -13,6 +13,18 @@ import importlib
 import torch
 import signal
 
+
+def _setup_tiny_mode(argv):
+    """`reproduce ... --tiny`: smoke-test mode (benchmarks/utils/tiny.py). Set
+    up before the package is imported, since its settings are read at import
+    time: tiny datasets and outputs go to $DATA_DIR/outputs-tiny."""
+    if len(argv) > 1 and argv[1] == 'reproduce' and '--tiny' in argv[2:]:
+        os.environ['BENCHMARKS_TINY'] = '1'
+        os.environ['DATA_DIR'] = os.path.join(os.environ.get('DATA_DIR', '.'), 'outputs-tiny')
+
+
+_setup_tiny_mode(sys.argv)
+
 import benchmarks.runnables
 from benchmarks.runnables import *
 

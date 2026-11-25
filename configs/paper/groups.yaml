@@ -1,0 +1,19 @@
+# Copyright (C) 2026 Alessandro Ronca
+#
+# This file is part of minmaxrnc-benchmarks.
+#
+# minmaxrnc-benchmarks is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# at your option any later version.
+
+# Word problems on permutation groups (Appendix app:experiments-groups;
+# tab:groups_results, fig:groups_eval): Word(S_3) and Word(S_4).
+
+experiments:
+  - groups_s3
+  - groups_s4
+
+evaluations:
+  - groups_s3
+  - groups_s4

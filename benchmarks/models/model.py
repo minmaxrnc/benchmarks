@@ -43,4 +43,10 @@ class Model(nn.Module):
     def supports_unroll_steps(self):
         return False
 
+    def inductor_config(self) -> dict:
+        """torch._inductor.config entries to set before this model is
+        compiled, as {'triton.some_flag': value} (see
+        benchmarks/utils/compile.py). None by default."""
+        return {}
+
 

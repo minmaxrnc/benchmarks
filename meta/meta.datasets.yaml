@@ -529,3 +529,107 @@ inductionheads_evaluation_(1):
       - 0
       - 50
     masked: true
+
+# ------------------------------------------------------------------
+# Long-range Sequences(2) (Appendix tab:longrange_datasets): training and
+# validation sequences of length 2^17 = 131,072 with p_set = 2^-16, so that
+# each sequence contains two relevant tokens in expectation; no resets.
+# The evaluation dataset has the parameters of sequences_evaluation_(1).
+# ------------------------------------------------------------------
+sequences_grad_train_(1):
+  class: Sequences
+  args:
+    kind: train
+    size: 20000
+    length:
+      - 131072
+      - 131072
+    n_ordered_seq: 2
+    n_distinct_seqs: 2
+    multiplicity: 2
+    n_other_tokens: 10
+    p_set: 1.5259e-5
+    p_reset: 0.0
+sequences_grad_val_(1):
+  class: Sequences
+  args:
+    kind: val
+    size: 1000
+    length:
+      - 131072
+      - 131072
+    n_ordered_seq: 2
+    n_distinct_seqs: 2
+    multiplicity: 2
+    n_other_tokens: 10
+    p_set: 1.5259e-5
+    p_reset: 0.0
+sequences_grad_evaluation_(1):
+  class: Sequences
+  args:
+    kind: evaluation
+    size: 1000
+    length: 1024000
+    n_ordered_seq: 2
+    n_distinct_seqs: 2
+    multiplicity: 2
+    n_other_tokens: 10
+    p_set: 1.0e-05
+    p_reset: 1.0e-06
+
+# ------------------------------------------------------------------
+# Word problems on permutation groups (Appendix tab:groups_datasets): fixed
+# length T; the label at step t is the running product of the inputs
+# (benchmarks/datasets/groupstatetracking.py). Word(S_4) is trained on 200k
+# sequences (the `__large` dataset).
+# ------------------------------------------------------------------
+groupstatetracking_s3_train:
+  class: GroupStateTracking
+  args:
+    kind: train
+    size: 20000
+    length:
+      - 128
+      - 128
+    group: S3
+groupstatetracking_s3_val:
+  class: GroupStateTracking
+  args:
+    kind: val
+    size: 1000
+    length:
+      - 512
+      - 512
+    group: S3
+groupstatetracking_s3_evaluation:
+  class: GroupStateTracking
+  args:
+    kind: evaluation
+    size: 1000
+    length: 1024000
+    group: S3
+groupstatetracking_s4_train__large:
+  class: GroupStateTracking
+  args:
+    kind: train
+    size: 200000
+    length:
+      - 128
+      - 128
+    group: S4
+groupstatetracking_s4_val:
+  class: GroupStateTracking
+  args:
+    kind: val
+    size: 1000
+    length:
+      - 512
+      - 512
+    group: S4
+groupstatetracking_s4_evaluation:
+  class: GroupStateTracking
+  args:
+    kind: evaluation
+    size: 1000
+    length: 1024000
+    group: S4

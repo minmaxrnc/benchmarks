@@ -1,0 +1,18 @@
+# Copyright (C) 2026 Alessandro Ronca
+#
+# This file is part of minmaxrnc-benchmarks.
+#
+# minmaxrnc-benchmarks is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# at your option any later version.
+
+# Long-range Sequences(2) (Appendix app:experiments-longrange;
+# tab:longrange_results). See also scripts/majority_baseline.py,
+# scripts/sequences_gap_stats.py and scripts/gradient_probe.py.
+
+experiments:
+  - longrange_sequences_(1)
+
+evaluations:
+  - longrange_sequences_(1)

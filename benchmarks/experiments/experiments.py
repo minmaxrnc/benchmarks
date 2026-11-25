@@ -23,5 +23,9 @@ class Experiments(Factory, metaclass=SingletonMeta):
     def get_models_trainers(self, experiment):
         return self.get_meta(experiment)['args']['models_trainers']
 
+    def get_protocol(self, experiment):
+        """The experiment's `protocol:` overrides of meta/meta.config.yaml ({} if none)."""
+        return dict(self.get_meta(experiment)['args'].get('protocol') or {})
+
 experiments = Experiments(__name__)
 

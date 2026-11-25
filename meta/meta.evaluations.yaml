@@ -8,62 +8,165 @@
 # at your option any later version.
 
 latching_(1):
-  enabled: true
+  enabled: false
   from_template: true
 
 latching_(2):
-  enabled: true
+  enabled: false
   from_template: true
 
 latching_(3):
-  enabled: true
+  enabled: false
   from_template: true
 
 latching_(4):
-  enabled: true
+  enabled: false
   from_template: true
 
 latching_(5):
-  enabled: true
+  enabled: false
   from_template: true
 
 latching_(6):
-  enabled: true
+  enabled: false
   from_template: true
 
 latching_(7):
-  enabled: true
+  enabled: false
   from_template: true
 
 latching_(8):
-  enabled: true
+  enabled: false
   from_template: true
 
 sequences_(1):
-  enabled: true
+  enabled: false
   from_template: true
 
 sequences_(2):
-  enabled: true
+  enabled: false
   from_template: true
 
 sequences_(3):
-  enabled: true
+  enabled: false
   from_template: true
 
 sequences_(4):
-  enabled: true
+  enabled: false
   from_template: true
 
 sequences_(5):
-  enabled: true
+  enabled: false
   from_template: true
 
 inductionheads_(0):
-  enabled: true
+  enabled: false
   from_template: true
 
 inductionheads_(1):
-  enabled: true
+  enabled: false
   from_template: true
 
+# Experiments of the paper (v0.2.0): enabled by default, so a bare `train` or
+# `evaluate` runs them; configs/paper/*.yaml selects one family at a time,
+# e.g. `python main.py reproduce main`. The earlier configurations above are
+# kept but disabled.
+main_latching_(1):
+  enabled: true
+  from_template: true
+main_latching_(2):
+  enabled: true
+  from_template: true
+main_latching_(3):
+  enabled: true
+  from_template: true
+main_latching_(4):
+  enabled: true
+  from_template: true
+main_latching_(5):
+  enabled: true
+  from_template: true
+main_latching_(6):
+  enabled: true
+  from_template: true
+main_latching_(7):
+  enabled: true
+  from_template: true
+main_latching_(8):
+  enabled: true
+  from_template: true
+main_sequences_(1):
+  enabled: true
+  from_template: true
+main_sequences_(2):
+  enabled: true
+  from_template: true
+main_sequences_(3):
+  enabled: true
+  from_template: true
+main_sequences_(4):
+  enabled: true
+  from_template: true
+main_sequences_(5):
+  enabled: true
+  from_template: true
+main_inductionheads_(0):
+  enabled: true
+  from_template: true
+main_inductionheads_(1):
+  enabled: true
+  from_template: true
+throughput_latching_(1):
+  enabled: true
+  from_template: true
+throughput_latching_(2):
+  enabled: true
+  from_template: true
+throughput_latching_(3):
+  enabled: true
+  from_template: true
+throughput_latching_(4):
+  enabled: true
+  from_template: true
+throughput_latching_(5):
+  enabled: true
+  from_template: true
+throughput_latching_(6):
+  enabled: true
+  from_template: true
+throughput_latching_(7):
+  enabled: true
+  from_template: true
+throughput_latching_(8):
+  enabled: true
+  from_template: true
+throughput_sequences_(1):
+  enabled: true
+  from_template: true
+throughput_sequences_(2):
+  enabled: true
+  from_template: true
+throughput_sequences_(3):
+  enabled: true
+  from_template: true
+throughput_sequences_(4):
+  enabled: true
+  from_template: true
+throughput_sequences_(5):
+  enabled: true
+  from_template: true
+throughput_inductionheads_(0):
+  enabled: true
+  from_template: true
+throughput_inductionheads_(1):
+  enabled: true
+  from_template: true
+groups_s3:
+  enabled: true
+  from_template: true
+groups_s4:
+  enabled: true
+  from_template: true
+longrange_sequences_(1):
+  enabled: true
+  from_template: true

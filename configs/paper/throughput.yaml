@@ -1,0 +1,47 @@
+# Copyright (C) 2026 Alessandro Ronca
+#
+# This file is part of minmaxrnc-benchmarks.
+#
+# minmaxrnc-benchmarks is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# at your option any later version.
+
+# Compiled + bf16 AMP re-run of the main battery's batch-size-64 two-layer
+# (Sequences: N+1-layer) configurations (tab:experiments-throughput, row
+# "MinMax (compiled+AMP)", and the claim that accuracy is unchanged). Then
+# `python main.py throughput_report -c configs/paper/throughput.yaml`.
+
+experiments:
+  - throughput_latching_(1)
+  - throughput_latching_(2)
+  - throughput_latching_(3)
+  - throughput_latching_(4)
+  - throughput_latching_(5)
+  - throughput_latching_(6)
+  - throughput_latching_(7)
+  - throughput_latching_(8)
+  - throughput_sequences_(1)
+  - throughput_sequences_(2)
+  - throughput_sequences_(3)
+  - throughput_sequences_(4)
+  - throughput_sequences_(5)
+  - throughput_inductionheads_(0)
+  - throughput_inductionheads_(1)
+
+evaluations:
+  - throughput_latching_(1)
+  - throughput_latching_(2)
+  - throughput_latching_(3)
+  - throughput_latching_(4)
+  - throughput_latching_(5)
+  - throughput_latching_(6)
+  - throughput_latching_(7)
+  - throughput_latching_(8)
+  - throughput_sequences_(1)
+  - throughput_sequences_(2)
+  - throughput_sequences_(3)
+  - throughput_sequences_(4)
+  - throughput_sequences_(5)
+  - throughput_inductionheads_(0)
+  - throughput_inductionheads_(1)

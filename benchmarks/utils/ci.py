@@ -9,12 +9,24 @@
 
 import numpy as np
 from .singleton import SingletonMeta
+from . import config
 
 
 class ConfidenceIntervals(metaclass=SingletonMeta):
 
     def __init__(self):
         self.rng = np.random.default_rng()
+
+    def _get_rng(self, seed):
+        """The bootstrap RNG. With seed=None, the `ci_seed` config key decides:
+        None (the default) keeps one unseeded RNG for the whole process, as in
+        the original runs; an int gives a fresh RNG seeded with it on every
+        call, so that a CI depends only on the scores it is computed from."""
+        if seed is None:
+            seed = config.get('ci_seed')
+        if seed is None:
+            return self.rng
+        return np.random.default_rng(seed)
 
     def mean_t(self, scores, delta):
         """Student-t CI."""
@@ -25,14 +37,13 @@ class ConfidenceIntervals(metaclass=SingletonMeta):
         tcrit = stats.t.ppf(1 - delta/2, df=n-1)
         return mean, mean - tcrit*se, mean + tcrit*se
 
-    def mean_bootstrap(self, scores, delta, B=10000):
+    def mean_bootstrap(self, scores, delta, B=10000, seed=None):
         """Bootstrap CI."""
+        rng = self._get_rng(seed)
         x = np.asarray(scores, dtype=float)
         n = x.size
         boots = np.empty(B)
         for b in range(B):
-            boots[b] = self.rng.choice(x, size=n, replace=True).mean()
+            boots[b] = rng.choice(x, size=n, replace=True).mean()
         low, high = np.percentile(boots, [100*delta/2, 100*(1-delta/2)])
         return x.mean(), low, high
-
-

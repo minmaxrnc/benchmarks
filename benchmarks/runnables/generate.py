@@ -16,12 +16,17 @@ from ..experiments.experiments import experiments
 from ..evaluations.evaluations import evaluations
 
 from ..utils.seed import Seeds
-from ..utils import config
-import zipfile
+from ..utils import config as config_module
+from ..utils import runtime_config
 
 
 
-def run(*argv):
+def run(*argv, config=None):
+    """Generate and save datasets. Without flags, for every enabled experiment
+    and evaluation. A runtime config (-c, or the `config` keyword argument as
+    for train/evaluate) selects the experiments/evaluations by name instead.
+    Each dataset is generated for ci_max_n seeds, as overridden by the
+    `protocol:` block of its experiment/evaluation, if any."""
     parser = argparse.ArgumentParser(
         description="Generate datasets. Without flags generates all datasets."
     )
@@ -43,11 +48,25 @@ def run(*argv):
         default=None,
         help="Generate only datasets for experiments/evaluations whose name starts with PREFIX"
     )
+    parser.add_argument(
+        '--config', '-c', default=None, metavar='PATH',
+        help='runtime config YAML listing experiments/evaluations (default: config/run.yaml)'
+    )
 
     args = parser.parse_args(argv)
+    cfg = config if config is not None else runtime_config.load(args.config)
+
+    def _names(scope):
+        if cfg is not None and scope in cfg:
+            names = list(cfg[scope] or [])
+        else:
+            names = list(meta.load(scope, only_enabled=True).keys())
+        if args.select:
+            names = [n for n in names if n.startswith(args.select)]
+        return names
 
     def _generate_dataset(dataset_name, long_seqs):
-        n_seeds = config.get('ci_max_n')
+        n_seeds = config_module.get('ci_max_n')
         for seed in Seeds(n_seeds):
             dataset = datasets.preinstantiate(dataset_name, seed=seed)
             header = "{:2d}/{}: ".format(seed, n_seeds)
@@ -59,60 +78,35 @@ def run(*argv):
 
     def _generate_for_experiment(experiment):
         experiment_args = experiments.get_property(experiment, 'args')
-        print(f"\n# Generating *training* datasets for experiment '{experiments.repr(experiment)}'")
-        _generate_dataset(experiment_args['train_dataset'], long_seqs=False)
-        print(f"\n# Generating *validation* datasets for experiment '{experiments.repr(experiment)}'")
-        _generate_dataset(experiment_args['val_dataset'], long_seqs=False)
+        with config_module.overrides(experiments.get_protocol(experiment)):
+            print(f"\n# Generating *training* datasets for experiment '{experiments.repr(experiment)}'")
+            _generate_dataset(experiment_args['train_dataset'], long_seqs=False)
+            print(f"\n# Generating *validation* datasets for experiment '{experiments.repr(experiment)}'")
+            _generate_dataset(experiment_args['val_dataset'], long_seqs=False)
 
     def _generate_for_evaluation(evaluation):
         evaluation_args = evaluations.get_property(evaluation, 'args')
-        print(f"\n# Generating *evaluation* dataset for evaluation '{experiments.repr(evaluation)}'")
-        _generate_dataset(evaluation_args['dataset'], long_seqs=True)
+        protocol = experiments.get_protocol(evaluation_args['experiment'])
+        protocol |= dict(evaluation_args.get('protocol') or {})
+        with config_module.overrides(protocol):
+            print(f"\n# Generating *evaluation* dataset for evaluation '{evaluations.repr(evaluation)}'")
+            _generate_dataset(evaluation_args['dataset'], long_seqs=True)
 
-    if args.experiments:
-        experiments_meta = meta.load('experiments', only_enabled=True)
-        if args.select:
-            experiments_meta = [e for e in experiments_meta if e.startswith(args.select)]
+    experiment_names = [] if args.evaluations else _names('experiments')
+    evaluation_names = [] if args.experiments else _names('evaluations')
 
-        print('\nWill generate datasets for the following experiments:')
-        for experiment in experiments_meta:
-            print(f"    - {experiments.str(experiment)}")
-
-        for experiment in experiments_meta:
-            _generate_for_experiment(experiment)
-
-    elif args.evaluations:
-        evaluations_meta = meta.load('evaluations', only_enabled=True)
-        if args.select:
-            evaluations_meta = [e for e in evaluations_meta if e.startswith(args.select)]
-
-        print('\nWill generate datasets for the following evaluations:')
-        for evaluation in evaluations_meta:
-            print(f"    - {evaluations.str(evaluation)}")
-
-        for evaluation in evaluations_meta:
-            _generate_for_evaluation(evaluation)
-
-    else:
-        experiments_meta = meta.load('experiments', only_enabled=True)
-        evaluations_meta = meta.load('evaluations', only_enabled=True)
-        if args.select:
-            experiments_meta = [e for e in experiments_meta if e.startswith(args.select)]
-            evaluations_meta = [e for e in evaluations_meta if e.startswith(args.select)]
-
-        print('\nWill generate datasets for the following:')
+    print('\nWill generate datasets for the following:')
+    if not args.evaluations:
         print('  Experiments:')
-        for experiment in experiments_meta:
+        for experiment in experiment_names:
             print(f"    - {experiments.str(experiment)}")
-
+    if not args.experiments:
         print('  Evaluations:')
-        for evaluation in evaluations_meta:
+        for evaluation in evaluation_names:
             print(f"    - {evaluations.str(evaluation)}")
 
-        for experiment in experiments_meta:
-            _generate_for_experiment(experiment)
+    for experiment in experiment_names:
+        _generate_for_experiment(experiment)
 
-        for evaluation in evaluations_meta:
-            _generate_for_evaluation(evaluation)
-
-
+    for evaluation in evaluation_names:
+        _generate_for_evaluation(evaluation)

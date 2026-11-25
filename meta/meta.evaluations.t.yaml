@@ -32,3 +32,70 @@
     metric: ChunkedTokenAccuracy
     dataset: inductionheads_evaluation_({N})
 
+# ------------------------------------------------------------------
+# Evaluations of the paper's experiments (v0.2.0). Each one inherits the
+# `protocol:` block of its experiment.
+# ------------------------------------------------------------------
+
+'main_latching_{N:int}':
+  class: Evaluation
+  args:
+    experiment: main_latching_({N})
+    metric: ChunkedTokenAccuracy
+    dataset: latching_evaluation_({N})
+
+'main_sequences_{N:int}':
+  class: Evaluation
+  args:
+    experiment: main_sequences_({N})
+    metric: ChunkedTokenAccuracy
+    dataset: sequences_evaluation_({N})
+
+'main_inductionheads_{N:int}':
+  class: Evaluation
+  args:
+    experiment: main_inductionheads_({N})
+    metric: ChunkedTokenAccuracy
+    dataset: inductionheads_evaluation_({N})
+
+'throughput_latching_{N:int}':
+  class: Evaluation
+  args:
+    experiment: throughput_latching_({N})
+    metric: ChunkedTokenAccuracy
+    dataset: latching_evaluation_({N})
+
+'throughput_sequences_{N:int}':
+  class: Evaluation
+  args:
+    experiment: throughput_sequences_({N})
+    metric: ChunkedTokenAccuracy
+    dataset: sequences_evaluation_({N})
+
+'throughput_inductionheads_{N:int}':
+  class: Evaluation
+  args:
+    experiment: throughput_inductionheads_({N})
+    metric: ChunkedTokenAccuracy
+    dataset: inductionheads_evaluation_({N})
+
+'groups_s3':
+  class: Evaluation
+  args:
+    experiment: groups_s3
+    metric: ChunkedTokenAccuracy
+    dataset: groupstatetracking_s3_evaluation
+
+'groups_s4':
+  class: Evaluation
+  args:
+    experiment: groups_s4
+    metric: ChunkedTokenAccuracy
+    dataset: groupstatetracking_s4_evaluation
+
+'longrange_sequences_{N:int}':
+  class: Evaluation
+  args:
+    experiment: longrange_sequences_({N})
+    metric: ChunkedTokenAccuracy
+    dataset: sequences_grad_evaluation_({N})

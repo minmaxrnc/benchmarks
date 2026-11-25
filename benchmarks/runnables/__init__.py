@@ -11,4 +11,6 @@ __all__ = [
         'generate',
         'train',
         'evaluate',
+        'throughput_report',
+        'reproduce',
         ]

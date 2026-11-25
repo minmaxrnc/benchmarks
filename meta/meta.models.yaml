@@ -193,3 +193,97 @@
   args:
     d_model: '{D}'
     n_layers: '{L}'
+
+# ------------------------------------------------------------------
+# MinMax RNC: configurations of the paper's experiments (v0.2.0)
+# ------------------------------------------------------------------
+#
+# The main battery (Latching, Sequences, InductionHeads) uses the recipe of
+# the minmaxrnc package: no output gate, basic convolution, asymmetric
+# initialisation of the set/reset projections, and the package defaults
+# otherwise (ffn_dropout 0.1). The paper's original main-table numbers were
+# produced with an earlier implementation (see docs/known-issues.md).
+#
+# MinMax-S: d_model 90, 40 scalar-state neurons. MinMax-M: d_model 90, 90
+# scalar-state neurons (the paper's "medium").
+
+'minmax_s__l_{L:int}':
+  class: MinMaxRNC_LM
+  pretty_name: MinMax-S
+  args:
+    n_layers: '{L}'
+    d_model: 90
+    scalar_neurons: 40
+    output_gate: false
+    conv_type: basic
+    s_r_init: asymmetric
+
+'minmax_m__l_{L:int}':
+  class: MinMaxRNC_LM
+  pretty_name: MinMax-M
+  args:
+    n_layers: '{L}'
+    d_model: 90
+    scalar_neurons: 90
+    output_gate: false
+    conv_type: basic
+    s_r_init: asymmetric
+
+# The same models under bf16 automatic mixed precision (model-level autocast
+# of the wrapper), for the compiled+AMP throughput runs; paired with
+# trainer_minmax_compiled_amp. Same parameters as the fp32 models.
+'minmax_s__l_{L:int}__amp_bf16':
+  class: MinMaxRNC_LM
+  pretty_name: MinMax-S (bf16 AMP)
+  args:
+    n_layers: '{L}'
+    d_model: 90
+    scalar_neurons: 40
+    output_gate: false
+    conv_type: basic
+    s_r_init: asymmetric
+    amp_dtype: bf16
+
+'minmax_m__l_{L:int}__amp_bf16':
+  class: MinMaxRNC_LM
+  pretty_name: MinMax-M (bf16 AMP)
+  args:
+    n_layers: '{L}'
+    d_model: 90
+    scalar_neurons: 90
+    output_gate: false
+    conv_type: basic
+    s_r_init: asymmetric
+    amp_dtype: bf16
+
+# Long-range Sequences: MinMax-S under bf16 AMP with the recurrence in fp16,
+# as run; paired with trainer_minmax_longseq.
+'minmax_s__l_{L:int}__amp_bf16__rec_fp16':
+  class: MinMaxRNC_LM
+  pretty_name: MinMax-S (bf16 AMP, fp16 recurrence)
+  args:
+    n_layers: '{L}'
+    d_model: 90
+    scalar_neurons: 40
+    output_gate: false
+    conv_type: basic
+    s_r_init: asymmetric
+    amp_dtype: bf16
+    recurrence_dtype: fp16
+
+# Word problems on permutation groups: MinMax(L, d) has L layers, each with
+# one array of 16 neurons of state dimension d and no scalar-state neurons;
+# d_model 90, asymmetric initialisation, output gate and basic convolution
+# (the package defaults).
+'minmax_groups__l_{L:int}__d_{D:int}':
+  class: MinMaxRNC_LM
+  pretty_name: MinMax (neuron arrays)
+  args:
+    n_layers: '{L}'
+    d_model: 90
+    scalar_neurons: 0
+    neurons:
+      - ['{D}', 16]
+    output_gate: true
+    conv_type: basic
+    s_r_init: asymmetric
