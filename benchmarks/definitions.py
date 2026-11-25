@@ -22,6 +22,16 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 RUNTIME_CONFIG_PATH = PROJECT_ROOT / 'config' / 'run.yaml'
 
+# Runtime configs of the paper's experiments, one per family (see
+# benchmarks/runnables/reproduce.py).
+PAPER_CONFIGS_DIR = PROJECT_ROOT / 'configs' / 'paper'
+
+# Smoke-test mode: tiny datasets, epochs and seeds (benchmarks/utils/tiny.py).
+# Set by `python main.py reproduce <family> --tiny`, which also points
+# DATA_DIR to a separate directory so that tiny datasets and outputs never
+# mix with real ones. Read once, at import time.
+TINY = os.environ.get('BENCHMARKS_TINY') == '1'
+
 DATA_DIR = os.environ.get("DATA_DIR", ".")
 
 OUTPUT_DIR = os.path.join(

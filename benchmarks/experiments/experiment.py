@@ -24,6 +24,7 @@ from .utils import (
 
 from ..utils.seed import seed_everything
 from ..utils.timer import Timer
+from ..utils import config
 
 
 class Experiment:
@@ -36,8 +37,14 @@ class Experiment:
             loss: str,
             train_dataset: str,
             val_dataset: str,
-            epochs: int
+            epochs: int,
+            protocol: Optional[Dict] = None
             ):
+        """protocol: keys of meta/meta.config.yaml overridden for this
+        experiment only (e.g. stopper__enabled, stopper__patience, ci_max_n,
+        max_train_runtime*, val_acc_giveup_threshold). The number of epochs is
+        the `epochs` argument itself. Evaluations of this experiment inherit
+        the same overrides (see benchmarks/evaluations/evaluation.py)."""
 
         self.name            = name
         self.models_trainers = models_trainers
@@ -46,6 +53,7 @@ class Experiment:
         self.train_dataset   = train_dataset
         self.val_dataset     = val_dataset
         self.epochs          = epochs
+        self.protocol        = dict(protocol or {})
 
 
     def run_model(self, model_name, trainer_name):
@@ -69,19 +77,23 @@ class Experiment:
         print(f"Model: {model_str}")
         print(f"Trainer: {trainer_str}")
 
-        trainer = trainers.instantiate(
-            trainer_name,
-            model           = model_name,
-            loss            = self.loss,
-            metric          = self.metric,
-            train_dataset   = self.train_dataset,
-            val_dataset     = self.val_dataset,
-            epochs          = self.epochs,
-            csv_log_path    = train_log_path,
-            best_model_path = best_model_path
-        )
+        if self.protocol:
+            print(f"Protocol overrides: {self.protocol}")
 
-        trainer.fit()
+        with config.overrides(self.protocol):
+            trainer = trainers.instantiate(
+                trainer_name,
+                model           = model_name,
+                loss            = self.loss,
+                metric          = self.metric,
+                train_dataset   = self.train_dataset,
+                val_dataset     = self.val_dataset,
+                epochs          = self.epochs,
+                csv_log_path    = train_log_path,
+                best_model_path = best_model_path
+            )
+
+            trainer.fit()
 
         timer.stop()
         write_completed(self.name, model_name, trainer_name, timer.get_elapsed())

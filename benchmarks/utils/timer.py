@@ -36,9 +36,9 @@ class Timer:
         t0 = time.perf_counter()
         self._start(t0)
 
-    def pause(self):
+    def pause(self, ok_if_already_paused=False):
         t = time.perf_counter()
-        self._pause(t)
+        self._pause(t, ok_if_already_paused=ok_if_already_paused)
 
     def resume(self):
         t0 = time.perf_counter()

@@ -9,11 +9,13 @@
 
 import os
 import csv
+import time
 import torch
 import math
 import json
 from pathlib import Path
 from datetime import datetime
+from typing import Optional
 
 from ..utils.device import device
 from ..utils import config
@@ -23,6 +25,9 @@ from ..utils.timer import Timer
 from ..utils.misc import pjoin
 from ..utils.gpumem import gpu_memory, bytes2miB
 from ..utils.tqdm import tqdm, trange
+from ..utils.norms import sum_of_squares
+from ..utils.oom import OOM_EXCEPTION_TYPES, is_oom_error
+from ..utils.compile import compile_model as _compile_model
 
 from ..models.utils import _nbytes
 from ..datasets import datasets
@@ -41,8 +46,11 @@ class Evaluator:
         dataset:      str,
         csv_log_path: str,
         model_state_dict,
+        # torch.compile the model; None: meta.config.yaml's compile_model flag
+        # (Evaluation passes the compile_model argument of the trainer).
+        compile_model: Optional[bool] = None,
         # ---- loaded args below
-        chunk_size:   int
+        chunk_size:   int = 1024
     ):
 
         length = datasets.get_length(dataset)
@@ -68,6 +76,47 @@ class Evaluator:
         self.ci_accuracy__min  = config.get('ci_accuracy__min')
         self.ci_accuracy__cum  = config.get('ci_accuracy__cum')
         self.ci_confidence     = config.get('ci_confidence')
+        self.max_eval_runtime  = config.get('max_eval_runtime')
+
+        # Largest batch size tried first (None: the whole dataset in one batch).
+        self.eval_max_batch_size = config.get('eval_max_batch_size')
+
+        if compile_model is None:
+            compile_model = config.get('compile_model')
+        self.compile_model = bool(compile_model)
+
+
+    @staticmethod
+    def strip_compile_prefix(state_dict):
+        """Remove the '_orig_mod.' prefix that torch.compile adds to the
+        state_dict() keys, so that checkpoints saved from a compiled module
+        load into a plain one. Checkpoints without the prefix are unchanged."""
+        prefix = '_orig_mod.'
+        if not any(k.startswith(prefix) for k in state_dict):
+            return state_dict
+        return {
+            (k[len(prefix):] if k.startswith(prefix) else k): v
+            for k, v in state_dict.items()
+        }
+
+
+    def _prepare_model(self):
+        """Instantiate, load and (optionally) compile the model, once for the
+        whole evaluation: torch.compile guards specialise on the module
+        instance, so recompiling a new model for every seed would exhaust
+        dynamo's recompile limit after a few seeds and fall back to eager."""
+        print(f"Preparing model {models.str(self.model)}")
+        model = models.instantiate(
+            self.model,
+            datasets.get_iosize(self.dataset)
+        )
+        model.load_state_dict(self.strip_compile_prefix(self.model_state_dict), strict=True)
+        model.train(False)
+        model.to(device)
+        if self.compile_model:
+            model = _compile_model(model)
+        print(f"torch.compile: {'enabled' if self.compile_model else 'disabled'}")
+        return model
 
 
     ## ---------- Public API ----------
@@ -78,15 +127,21 @@ class Evaluator:
         timer = Timer()
         seeds = Seeds(self.ci_max_n)
 
+        prepared_model = []
+        def get_model():
+            if not prepared_model:
+                prepared_model.append(self._prepare_model())
+            return prepared_model[0]
+
         histories        = []
         acc_min__history = []
         acc_cum__history = []
 
         for iteration_idx, seed in enumerate(seeds):
-            timer_seed = Timer(timer, max_time=config.get('max_eval_runtime'))
+            timer_seed = Timer(timer, max_time=self.max_eval_runtime)
 
             print(f"\n\n# Evaluating with seed={seed}\n")
-            history  = self._evaluate(seed, timer_seed)
+            history  = self._evaluate(seed, timer_seed, get_model)
             acc_min = history.get_min('acc')
             acc_cum  = history.get_last('acc_cum')
             tqdm.write(f"  accuracy for seed {seed}: min={acc_min:.3f}, mean={acc_cum:.3f}")
@@ -168,7 +223,7 @@ class Evaluator:
         })
 
 
-    def _evaluate(self, seed, timer):
+    def _evaluate(self, seed, timer, get_model):
 
         already_completed, history, runtime = self._check_completed_seed(seed)
         if already_completed:
@@ -185,25 +240,12 @@ class Evaluator:
             seed = seed
         )
 
+        model = get_model()
+
         # Function to have an attempt with a given batch_size
         def __evaluate(batch_size):
 
             loader = dataset.get_loader(batch_size)
-
-            ## Preparing model
-
-            additional_model_kwargs = {}
-            ### Add here any additional kwargs required by the model
-
-            print(f"Preparing model {models.str(self.model)}")
-            model = models.instantiate(
-                self.model,
-                datasets.get_iosize(self.dataset),
-                **additional_model_kwargs
-            )
-            model_state_dict = self.model_state_dict
-            model.load_state_dict(model_state_dict, strict=True)
-            model.train(False)
 
             ## Preparing metric
 
@@ -213,15 +255,27 @@ class Evaluator:
             ## Running evaluation
 
             torch.set_grad_enabled(False)
-            model.to(device)
 
             timer.resume()
 
             runtimes    = [0]  * self.num_chunks
             timelimits  = [''] * self.num_chunks
 
+            # Throughput bookkeeping: tokens from tensor shapes; the whole seed
+            # is timed once, with a device sync before reading the clock.
+            # Time spent waiting for batches (data_time) and computing the
+            # state norms (stats_time) is subtracted.
+            tokens_processed   = 0
+            stats_time         = 0.0
+            data_time          = 0.0
+            state_sq_per_chunk = [None] * self.num_chunks
+            throughput_t0      = time.perf_counter()
+            batch_wait_t0      = time.perf_counter()
+
             with tqdm(total=len(loader), desc='batches', leave=False, mininterval=TQDM_MININTERVAL) as pb:
                 for batch_idx, batch in enumerate(loader):
+                    data_time += time.perf_counter() - batch_wait_t0
+
                     x    = batch['inputs']
                     y    = batch['outputs']
                     mask = batch['mask']
@@ -261,6 +315,15 @@ class Evaluator:
                             # update metric
                             metric.update(logits_chunk, y_chunk, mask_chunk, chunk_idx)
 
+                            tokens_processed += x_chunk.numel()
+
+                            stats_t0 = time.perf_counter()
+                            state_sq = sum_of_squares(model_state)
+                            if state_sq is not None:
+                                prev = state_sq_per_chunk[chunk_idx]
+                                state_sq_per_chunk[chunk_idx] = state_sq if prev is None else prev + state_sq
+                            stats_time += time.perf_counter() - stats_t0
+
                             chunk_pbar.update(self.chunk_size)
                             runtimes[chunk_idx] += timer.get_elapsed()
                             if timer.is_over_limit():
@@ -272,21 +335,41 @@ class Evaluator:
                     if timer.is_over_limit():
                         break
 
+                    batch_wait_t0 = time.perf_counter()
+
+            if device.type == 'cuda':
+                torch.cuda.synchronize()
+            throughput_time = (time.perf_counter() - throughput_t0) - stats_time - data_time
+            throughput = tokens_processed / throughput_time if throughput_time > 0 else 0.0
+
+            state_norm = [float('nan')] * self.num_chunks
+            present = [i for i, s in enumerate(state_sq_per_chunk) if s is not None]
+            if present:
+                norms = torch.stack([state_sq_per_chunk[i] for i in present]).sqrt().cpu().tolist()
+                for i, v in zip(present, norms):
+                    state_norm[i] = v
+
             timer.stop()
 
             history = HistorySeed(
-                step      = [self.chunk_size * (chunk_idx+1) for chunk_idx in range(self.num_chunks)],
-                acc       = metric.compute(),
-                acc_cum   = metric.compute_cumulative(),
-                runtime   = runtimes,
-                timelimit = timelimits
+                step       = [self.chunk_size * (chunk_idx+1) for chunk_idx in range(self.num_chunks)],
+                acc        = metric.compute(),
+                acc_cum    = metric.compute_cumulative(),
+                runtime    = runtimes,
+                timelimit  = timelimits,
+                state_norm = state_norm
             )
 
             self._csv__write_history_per_seed(seed, history)
             self._json_write_runinfo_per_seed(
                 seed,
                 runtime        = timer.get_elapsed(),
-                runtime_pretty = timer.get_elapsed(pretty=True)
+                runtime_pretty = timer.get_elapsed(pretty=True),
+                tokens         = tokens_processed,
+                stats_time     = stats_time,
+                data_time      = data_time,
+                throughput     = throughput,
+                batch_size     = batch_size
             )
             self._write_completed_per_seed(seed)
 
@@ -294,18 +377,22 @@ class Evaluator:
 
         # We will call the above function with more and more batches until memory suffices
         n_batches = 1
+        if self.eval_max_batch_size is not None:
+            n_batches = max(n_batches, math.ceil(len(dataset) / self.eval_max_batch_size))
         success = False
         while not success:
             try:
                 batch_size = math.ceil(len(dataset) / n_batches)
                 history = __evaluate(batch_size)
                 success = True
-            except torch.cuda.OutOfMemoryError as e:
+            except OOM_EXCEPTION_TYPES as e:
+                if not is_oom_error(e):
+                    raise
                 if n_batches == len(dataset):
                     raise Exception("Not enough memory even with a batch per sample... Giving up!")
-                timer.pause()
-                print(f"Reducing batch size to {math.ceil(len(dataset) / n_batches)}")
+                timer.pause(ok_if_already_paused=True)
                 n_batches += 1
+                print(f"Reducing batch size to {math.ceil(len(dataset) / n_batches)}")
 
         return history
 
@@ -337,11 +424,14 @@ class Evaluator:
             ext='txt'
         )
 
-    def _json_write_runinfo_per_seed(self, seed, runtime, runtime_pretty):
+    def _json_write_runinfo_per_seed(self, seed, runtime, runtime_pretty, **stats):
+        """stats: throughput bookkeeping of the seed (tokens, stats_time,
+        data_time, throughput in tokens/s, batch_size)."""
         path = self._get_path__runinfo_per_seed(seed)
         data = {
             'runtime': runtime,
-            'runtime_pretty': runtime_pretty
+            'runtime_pretty': runtime_pretty,
+            **stats
         }
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
@@ -411,11 +501,15 @@ class HistorySeed:
 
     @staticmethod
     def keys():
-        return ['step', 'acc', 'acc_cum', 'runtime', 'timelimit']
+        return ['step', 'acc', 'acc_cum', 'runtime', 'timelimit', 'state_norm']
 
     @staticmethod
     def datatypes():
-        return [int, float, float, float, str]
+        return [int, float, float, float, str, float]
+
+    # Keys of the histories written before state_norm was recorded; loading
+    # one of them fills state_norm with NaN.
+    LEGACY_KEYS = ['step', 'acc', 'acc_cum', 'runtime', 'timelimit']
 
     def _check_keys(self, kwargs):
         for key in kwargs:
@@ -469,10 +563,16 @@ class HistorySeed:
         with open(path, newline='', encoding="utf-8") as f:
             reader = csv.reader(f)
             header = next(reader)
-            if header != HistorySeed.keys():
+            if header == HistorySeed.keys():
+                legacy = False
+            elif header == HistorySeed.LEGACY_KEYS:
+                legacy = True
+            else:
                 raise Exception('Invalid header found in csv file')
             history = HistorySeed()
             for row in reader:
+                if legacy:
+                    row = row + ['nan']
                 row_data = {
                     key: dt(row[key_idx])
                     for key_idx, (key, dt) in enumerate(zip(HistorySeed.keys(),

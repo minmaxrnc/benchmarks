@@ -17,6 +17,8 @@ from ..utils.misc import str_class, repr_class
 from ..utils.properties import Properties
 
 from .templatestrings import match_template
+from .tiny import TinyMeta
+from ..definitions import TINY
 
 
 class Factory:
@@ -27,6 +29,8 @@ class Factory:
 
         self._name    = module_name.split('.')[-1]
         self._meta    = meta.load(self._name)
+        if TINY:
+            self._meta = TinyMeta(self._meta, self._name)
         self._classes = {_class.__name__: _class for _class in classes}
 
 

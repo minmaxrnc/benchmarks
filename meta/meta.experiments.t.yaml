@@ -101,3 +101,183 @@
         trainer: trainer_default
       - model: minmaxrnc__d_(90)__l_(2)__s_(90)__og_true__cv_basic__sri_asymmetric
         trainer: trainer_default
+
+# ------------------------------------------------------------------
+# Experiments of the paper (v0.2.0), MinMax only.
+#
+# The templates above are the og/gc/s_r_init ablation-style configurations
+# of earlier releases. The ones below reproduce the paper's MinMax
+# experiments; configs/paper/*.yaml lists them per family, and
+# `python main.py reproduce <family>` runs them (docs/reproducing.md).
+# ------------------------------------------------------------------
+
+# Main battery (tab:experiments-latching, -sequences, -inductionheads).
+# Latching(2^(N+1)), i.e. N = 1..8 for n = 4..512.
+'main_latching_{N:int}':
+  class: Experiment
+  args:
+    epochs: 30
+    train_dataset: latching_train_({N})
+    val_dataset: latching_val_({N})
+    loss: CrossEntropyLoss
+    metric: TokenAccuracy
+    models_trainers:
+      - model: minmax_s__l_(2)
+        trainer: trainer_minmax
+
+# Sequences(n) for N = 1..5, i.e. n = 2, 3, 4, 8, 16, with L = N + 1 layers
+# (2..6), as in all the runs (docs/known-issues.md).
+'main_sequences_{N:int}':
+  class: Experiment
+  args:
+    epochs: 30
+    train_dataset: sequences_train_({N})
+    val_dataset: sequences_val_({N})
+    loss: CrossEntropyLoss
+    metric: TokenAccuracy
+    models_trainers:
+      - model: minmax_s__l_({N}+1)
+        trainer: trainer_minmax
+
+# InductionHeads(n), N = 0, 1 for n = 16, 30: L2 small, L2 small bs8,
+# L2 medium, L3 small.
+'main_inductionheads_{N:int}':
+  class: Experiment
+  args:
+    epochs: 30
+    train_dataset: inductionheads_train_({N})
+    val_dataset: inductionheads_val_({N})
+    loss: CrossEntropyLoss
+    metric: TokenAccuracy
+    models_trainers:
+      - model: minmax_s__l_(2)
+        trainer: trainer_minmax
+      - model: minmax_s__l_(2)
+        trainer: trainer_minmax_bs8
+      - model: minmax_m__l_(2)
+        trainer: trainer_minmax
+      - model: minmax_s__l_(3)
+        trainer: trainer_minmax
+
+# Throughput (tab:experiments-throughput, row "MinMax (compiled+AMP)"): the
+# main battery's batch-size-64 two-layer (Sequences: N+1-layer) runs again,
+# compiled and under bf16 AMP. The eager row comes from the main_* runs.
+'throughput_latching_{N:int}':
+  class: Experiment
+  args:
+    epochs: 30
+    train_dataset: latching_train_({N})
+    val_dataset: latching_val_({N})
+    loss: CrossEntropyLoss
+    metric: TokenAccuracy
+    models_trainers:
+      - model: minmax_s__l_(2)__amp_bf16
+        trainer: trainer_minmax_compiled_amp
+
+'throughput_sequences_{N:int}':
+  class: Experiment
+  args:
+    epochs: 30
+    train_dataset: sequences_train_({N})
+    val_dataset: sequences_val_({N})
+    loss: CrossEntropyLoss
+    metric: TokenAccuracy
+    models_trainers:
+      - model: minmax_s__l_({N}+1)__amp_bf16
+        trainer: trainer_minmax_compiled_amp
+
+'throughput_inductionheads_{N:int}':
+  class: Experiment
+  args:
+    epochs: 30
+    train_dataset: inductionheads_train_({N})
+    val_dataset: inductionheads_val_({N})
+    loss: CrossEntropyLoss
+    metric: TokenAccuracy
+    models_trainers:
+      - model: minmax_s__l_(2)__amp_bf16
+        trainer: trainer_minmax_compiled_amp
+      - model: minmax_m__l_(2)__amp_bf16
+        trainer: trainer_minmax_compiled_amp
+
+# Word(S_3) (tab:groups_results, fig:groups_eval): MinMax(L, d) for
+# d in {3, 4, 5}, L in {1, 2}, batch sizes 64 and 8. 30 epochs, early
+# stopping with patience 3, seed-skip threshold 0.5, 4-hour time limit.
+'groups_s3':
+  class: Experiment
+  args:
+    epochs: 30
+    train_dataset: groupstatetracking_s3_train
+    val_dataset: groupstatetracking_s3_val
+    loss: CrossEntropyLoss
+    metric: TokenAccuracy
+    protocol:
+      stopper__patience: 3
+      val_acc_giveup_threshold: 0.5
+    models_trainers:
+      - model: minmax_groups__l_(1)__d_(3)
+        trainer: trainer_groups
+      - model: minmax_groups__l_(1)__d_(3)
+        trainer: trainer_groups_bs8
+      - model: minmax_groups__l_(1)__d_(4)
+        trainer: trainer_groups
+      - model: minmax_groups__l_(1)__d_(4)
+        trainer: trainer_groups_bs8
+      - model: minmax_groups__l_(1)__d_(5)
+        trainer: trainer_groups
+      - model: minmax_groups__l_(1)__d_(5)
+        trainer: trainer_groups_bs8
+      - model: minmax_groups__l_(2)__d_(3)
+        trainer: trainer_groups
+      - model: minmax_groups__l_(2)__d_(3)
+        trainer: trainer_groups_bs8
+      - model: minmax_groups__l_(2)__d_(4)
+        trainer: trainer_groups
+      - model: minmax_groups__l_(2)__d_(4)
+        trainer: trainer_groups_bs8
+      - model: minmax_groups__l_(2)__d_(5)
+        trainer: trainer_groups
+      - model: minmax_groups__l_(2)__d_(5)
+        trainer: trainer_groups_bs8
+
+# Word(S_4): MinMax(1, d) for d in {4, 5}, batch size 64, 200k training
+# sequences, 100 epochs, early stopping disabled, seed-skip threshold 0.5,
+# 4-hour time limit.
+'groups_s4':
+  class: Experiment
+  args:
+    epochs: 100
+    train_dataset: groupstatetracking_s4_train__large
+    val_dataset: groupstatetracking_s4_val
+    loss: CrossEntropyLoss
+    metric: TokenAccuracy
+    protocol:
+      stopper__enabled: false
+      val_acc_giveup_threshold: 0.5
+    models_trainers:
+      - model: minmax_groups__l_(1)__d_(4)
+        trainer: trainer_groups
+      - model: minmax_groups__l_(1)__d_(5)
+        trainer: trainer_groups
+
+# Long-range Sequences(2) (tab:longrange_results): training and validation
+# length 131,072. Early stopping with patience 3, at most 5 seeds, 12-hour
+# time limits, evaluation batches of at most 256 sequences.
+'longrange_sequences_{N:int}':
+  class: Experiment
+  args:
+    epochs: 30
+    train_dataset: sequences_grad_train_({N})
+    val_dataset: sequences_grad_val_({N})
+    loss: CrossEntropyLoss
+    metric: TokenAccuracy
+    protocol:
+      ci_max_n: 5
+      stopper__patience: 3
+      max_train_runtime: 43200
+      max_train_runtime__per_params: 43200
+      max_train_runtime__per_seed: 43200
+      eval_max_batch_size: 256
+    models_trainers:
+      - model: minmax_s__l_({N}+1)__amp_bf16__rec_fp16
+        trainer: trainer_minmax_longseq

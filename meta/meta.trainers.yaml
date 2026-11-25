@@ -34,3 +34,80 @@ trainer_bs8:
     lr: 0.001
     train_batch_size: 8
 
+# ------------------------------------------------------------------
+# Trainers of the paper's experiments (v0.2.0)
+# ------------------------------------------------------------------
+
+# Main battery (Appendix tab:trainers): Adam with weight decay 1e-4 (see
+# meta.optimizers.yaml), lr 1e-3 halved every 5 epochs.
+trainer_minmax:
+  class: Trainer
+  pretty_name: MinMax
+  args:
+    optimizer: adam
+    scheduler: step
+    lr: 0.001
+    train_batch_size: 64
+
+trainer_minmax_bs8:
+  class: Trainer
+  pretty_name: MinMax (bs8)
+  args:
+    optimizer: adam
+    scheduler: step
+    lr: 0.001
+    train_batch_size: 8
+
+# Throughput runs: the trainer_minmax recipe with torch.compile, in training
+# and in the evaluations of its models. Mixed precision is a model setting
+# (amp_dtype), so this trainer is paired with the minmax_*__amp_bf16 models.
+trainer_minmax_compiled_amp:
+  class: Trainer
+  pretty_name: MinMax (compiled, AMP)
+  args:
+    optimizer: adam
+    scheduler: step
+    lr: 0.001
+    train_batch_size: 64
+    compile_model: true
+
+# Word problems on groups: Adam with weight decay 1e-4 (as run), lr 1e-3
+# with cosine annealing to 0 over the training epochs.
+trainer_groups:
+  class: Trainer
+  pretty_name: Groups
+  args:
+    optimizer: adam
+    scheduler: cosine
+    lr: 0.001
+    train_batch_size: 64
+
+trainer_groups_bs8:
+  class: Trainer
+  pretty_name: Groups (bs8)
+  args:
+    optimizer: adam
+    scheduler: cosine
+    lr: 0.001
+    train_batch_size: 8
+
+# Long-range Sequences (training length 131,072): the trainer_minmax recipe,
+# compiled, with 2 micro-batches of 32 sequences and a forward pass in chunks
+# of 65,536 steps under gradient checkpointing (neither changes the
+# gradients). Mixed precision is a model setting (amp_dtype bf16,
+# recurrence_dtype fp16), so this trainer is paired with
+# minmax_s__l_(2)__amp_bf16__rec_fp16. The weights before training and after
+# epochs 1 and 2 are saved for scripts/gradient_probe.py (no effect on
+# training).
+trainer_minmax_longseq:
+  class: Trainer
+  pretty_name: MinMax (long sequences, compiled)
+  args:
+    optimizer: adam
+    scheduler: step
+    lr: 0.001
+    train_batch_size: 64
+    grad_accum_steps: 2
+    max_unroll_steps: 65536
+    compile_model: true
+    save_checkpoint_epochs: [0, 1, 2]

@@ -1,0 +1,50 @@
+# Copyright (C) 2026 Alessandro Ronca
+#
+# This file is part of minmaxrnc-benchmarks.
+#
+# minmaxrnc-benchmarks is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# at your option any later version.
+
+# Main battery (Appendix app:experiments; tab:experiments-all, -latching,
+# -sequences, -inductionheads; the eager "MinMax" row of
+# tab:experiments-throughput): Latching(4..512), Sequences(2, 3, 4, 8, 16),
+# InductionHeads(16, 30).
+#
+#   python main.py reproduce main
+#   python main.py train -c configs/paper/main.yaml   # one step at a time
+
+experiments:
+  - main_latching_(1)
+  - main_latching_(2)
+  - main_latching_(3)
+  - main_latching_(4)
+  - main_latching_(5)
+  - main_latching_(6)
+  - main_latching_(7)
+  - main_latching_(8)
+  - main_sequences_(1)
+  - main_sequences_(2)
+  - main_sequences_(3)
+  - main_sequences_(4)
+  - main_sequences_(5)
+  - main_inductionheads_(0)
+  - main_inductionheads_(1)
+
+evaluations:
+  - main_latching_(1)
+  - main_latching_(2)
+  - main_latching_(3)
+  - main_latching_(4)
+  - main_latching_(5)
+  - main_latching_(6)
+  - main_latching_(7)
+  - main_latching_(8)
+  - main_sequences_(1)
+  - main_sequences_(2)
+  - main_sequences_(3)
+  - main_sequences_(4)
+  - main_sequences_(5)
+  - main_inductionheads_(0)
+  - main_inductionheads_(1)

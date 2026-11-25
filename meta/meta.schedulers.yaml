@@ -24,3 +24,8 @@ step_warmup:
     step_size: 5
     gamma: 0.5
     warmup_fraction: 0.1
+cosine:
+  class: CosineAnnealingLR
+  pretty_name: Cosine
+  args:
+    eta_min: 0.0

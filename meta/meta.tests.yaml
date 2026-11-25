@@ -33,7 +33,9 @@ groups:
     enabled: true
     description: >
       VanillaRNN construction, forward pass shapes and dtypes,
-      weight-decay parameter groups, supports_unroll_steps.
+      weight-decay parameter groups, supports_unroll_steps. MinMax RNC
+      wrapper: builds without warnings, parameter counts, og/gc variants,
+      neuron arrays, unroll_steps invariance, amp_dtype/recurrence_dtype.
 
   losses:
     enabled: true
@@ -58,6 +60,57 @@ groups:
     description: >
       NoneScheduler and StepLR construction, lr-decay after step() calls,
       step-property values.
+
+  trainer:
+    enabled: true
+    description: >
+      Trainer on CPU: chunked forward with gradient checkpointing, gradient
+      accumulation, OOM-retry policy, gradient norms, train_log CSV, and
+      end-to-end fits with in-memory datasets (best_model option, seed-skip
+      rule, run_env, epoch checkpoints, OOM retry).
+
+  evaluator:
+    enabled: true
+    description: >
+      Evaluator on CPU: checkpoints of compiled models, history CSV with and
+      without state_norm, end-to-end evaluation with an in-memory dataset.
+
+  config:
+    enabled: true
+    description: >
+      Config overrides, per-experiment and per-evaluation protocol blocks,
+      seeded CI bootstrap.
+
+  stats:
+    enabled: true
+    description: >
+      Throughput and gradient/state-norm extraction from outputs on disk,
+      and their aggregation across seeds, families and models.
+
+  paper:
+    enabled: true
+    description: >
+      Every experiment of configs/paper/*.yaml resolves to the intended
+      models, trainers, datasets and protocol; the models build at their
+      benchmark's vocabulary size with the paper's parameter counts.
+
+  permutation_groups:
+    enabled: true
+    description: >
+      Cayley tables of S_n and A_n: order, identity, Latin square,
+      associativity.
+
+  groups:
+    enabled: true
+    description: >
+      GroupStateTracking labels (running product, brute force on short
+      sequences), vocabulary, cosine scheduler.
+
+  scripts:
+    enabled: true
+    description: >
+      scripts/: majority-class baseline, event-gap statistics and gradient
+      probe on tiny CPU inputs; tiny-mode meta shrinking.
 
   integration:
     enabled: true

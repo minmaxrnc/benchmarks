@@ -1,5 +1,5 @@
-torch
-minmaxrnc
+torch>=2.4
+minmaxrnc>=0.4.1,<0.5
 pyyaml
 tqdm
 numpy

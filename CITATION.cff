@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: >-
+  If you use these benchmarks, please cite the paper below (preferred citation)
+  and, if relevant, this software.
+type: software
+title: MinMax RNC Benchmarks
+authors:
+  - family-names: Ronca
+    given-names: Alessandro
+version: 0.2.0
+license: GPL-3.0-or-later
+repository-code: https://github.com/minmaxrnc/benchmarks
+keywords:
+  - recurrent neural networks
+  - benchmarks
+  - state tracking
+  - long-range dependencies
+preferred-citation:
+  type: conference-paper
+  title: MinMax Recurrent Neural Cascades
+  authors:
+    - family-names: Ronca
+      given-names: Alessandro
+  collection-title: NeurIPS 2026
+  year: 2026
+  url: https://openreview.net/forum?id=8sPcuoX2cj

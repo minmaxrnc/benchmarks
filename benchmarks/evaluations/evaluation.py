@@ -24,6 +24,7 @@ from .utils import (
 
 from ..utils.seed import seed_everything
 from ..utils.timer import Timer
+from ..utils import config
 
 
 class Evaluation:
@@ -34,13 +35,18 @@ class Evaluation:
             experiment:     str,
             metric:         str,
             dataset:        str,
-            models_trainers = None
+            models_trainers = None,
+            protocol        = None
             ):
+        """protocol: overrides of meta/meta.config.yaml for this evaluation
+        (e.g. ci_max_n, max_eval_runtime, eval_max_batch_size). They apply on
+        top of the `protocol:` block of the evaluated experiment."""
 
         self.name = name
         self.experiment = experiment
         self.metric = metric
         self.dataset = dataset
+        self.protocol = experiments.get_protocol(self.experiment) | dict(protocol or {})
 
         if models_trainers is not None:
             self.models_trainers = models_trainers
@@ -77,15 +83,20 @@ class Evaluation:
 
         model_state_dict = load_model_state_dict(self.experiment, model, trainer)
 
-        evaluator = evaluators.instantiate(
-                'Evaluator',
-                model            = model,
-                model_state_dict = model_state_dict,
-                metric           = self.metric,
-                dataset          = self.dataset,
-                csv_log_path     = log_path
-                )
-        evaluator.evaluate()
+        if self.protocol:
+            print(f"Protocol overrides: {self.protocol}")
+
+        with config.overrides(self.protocol):
+            evaluator = evaluators.instantiate(
+                    'Evaluator',
+                    model            = model,
+                    model_state_dict = model_state_dict,
+                    metric           = self.metric,
+                    dataset          = self.dataset,
+                    csv_log_path     = log_path,
+                    compile_model    = trainers.get_meta(trainer)['args'].get('compile_model')
+                    )
+            evaluator.evaluate()
 
         timer.stop()
 

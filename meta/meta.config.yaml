@@ -37,3 +37,21 @@ stopper__min_delta: 1.0e-05
 stopper__debias: false
 saved_dataset_part__threshold_bytes: 1073741824
 learning_dynamics_tracker__enabled: false
+# Seed of the bootstrap RNG for the confidence intervals. null: unseeded
+# (as in the original runs); an int makes every CI a deterministic function
+# of its scores.
+ci_seed: null
+# Stop trying seeds once the upper bound of the val_acc CI is below this
+# value. null: disabled.
+val_acc_giveup_threshold: null
+# Weights kept for each seed: best_epoch (the epoch with the best validation
+# accuracy, then loss) or last_epoch (the weights at the end of training,
+# which is what the runs before v0.2.0 saved). A trainer's best_model
+# argument takes precedence.
+best_model: best_epoch
+# torch.compile the model in training and evaluation. A trainer's
+# compile_model argument takes precedence.
+compile_model: false
+# Largest batch size tried first in evaluation (it is reduced further on
+# out-of-memory errors). null: the whole evaluation dataset.
+eval_max_batch_size: null
