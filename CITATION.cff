@@ -8,6 +8,7 @@ authors:
   - family-names: Ronca
     given-names: Alessandro
 version: 0.2.0
+date-released: 2026-11-25
 license: GPL-3.0-or-later
 repository-code: https://github.com/minmaxrnc/benchmarks
 keywords:

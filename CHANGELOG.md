@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0
+## 0.2.0 (2026-11-25)
 
 Configurations and tools to reproduce the MinMax experiments of the paper with the `minmaxrnc`
 package: the main battery, the compiled+AMP throughput runs, the word problems on permutation groups

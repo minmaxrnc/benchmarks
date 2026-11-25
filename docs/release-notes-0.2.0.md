@@ -1,4 +1,4 @@
-# v0.2.0 (draft release notes)
+# v0.2.0
 
 This release makes it possible to re-run the MinMax experiments of the paper with the
 [`minmaxrnc`](https://github.com/minmaxrnc/model) package (`minmaxrnc>=0.4.1,<0.5`):
